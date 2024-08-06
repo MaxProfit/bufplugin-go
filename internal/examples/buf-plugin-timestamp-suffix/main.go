@@ -77,7 +77,7 @@ func handleFieldDescriptor(
 	}
 	if !strings.HasSuffix(string(fieldDescriptor.Name()), "_time") {
 		responseWriter.AddAnnotation(
-			check.WithMessage("Fields of type google.protobuf.Timestamp must end in _time."),
+			check.WithMessagef("Fields of type google.protobuf.Timestamp must end in _time but field name was %q.", string(fieldDescriptor.Name())),
 			check.WithDescriptor(fieldDescriptor),
 		)
 	}
