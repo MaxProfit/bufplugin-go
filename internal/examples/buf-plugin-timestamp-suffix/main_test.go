@@ -45,6 +45,7 @@ func TestTimestampSuffixSimpleFailure(t *testing.T) {
 			{
 				ID: timestampSuffixID,
 				Location: &checktest.ExpectedLocation{
+					FileName:    "simple.proto",
 					StartLine:   8,
 					StartColumn: 2,
 					EndLine:     8,

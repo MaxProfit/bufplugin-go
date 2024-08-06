@@ -200,6 +200,7 @@ func ExpectedAnnotationForAnnotation(annotation check.Annotation) ExpectedAnnota
 	}
 	if location := annotation.Location(); location != nil {
 		expectedAnnotation.Location = &ExpectedLocation{
+			FileName:    location.FileName(),
 			StartLine:   location.StartLine(),
 			StartColumn: location.StartColumn(),
 			EndLine:     location.EndLine(),
@@ -208,6 +209,7 @@ func ExpectedAnnotationForAnnotation(annotation check.Annotation) ExpectedAnnota
 	}
 	if againstLocation := annotation.AgainstLocation(); againstLocation != nil {
 		expectedAnnotation.AgainstLocation = &ExpectedLocation{
+			FileName:    againstLocation.FileName(),
 			StartLine:   againstLocation.StartLine(),
 			StartColumn: againstLocation.StartColumn(),
 			EndLine:     againstLocation.EndLine(),
