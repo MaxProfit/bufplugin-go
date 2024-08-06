@@ -1,0 +1,86 @@
+run:
+  skip-dirs-use-default: false
+linters-settings:
+  errcheck:
+    check-type-assertions: true
+  forbidigo:
+    forbid:
+      - '^fmt\.Print'
+      - '^log\.'
+      - '^print$'
+      - '^println$'
+      - '^panic$'
+  godox:
+    # TODO, OPT, etc. comments are fine to commit. Use FIXME comments for
+    # temporary hacks, and use godox to prevent committing them.
+    keywords: [FIXME]
+  varnamelen:
+    ignore-decls:
+      - T any
+      - i int
+      - wg sync.WaitGroup
+      - id string
+linters:
+  enable-all: true
+  disable:
+    - cyclop            # covered by gocyclo
+    - depguard          # unnecessary for small libraries
+    - deadcode          # abandoned
+    - exhaustivestruct  # replaced by exhaustruct
+    - exhaustruct       # many exceptions
+    - funlen            # rely on code review to limit function length
+    - gochecknoglobals  # many exceptions
+    - gocognit          # dubious "cognitive overhead" quantification
+    - goerr113          # way too noisy
+    - gofumpt           # prefer standard gofmt
+    - goimports         # rely on gci instead
+    - golint            # deprecated by Go team
+    - gomnd             # some unnamed constants are okay
+    - ifshort           # deprecated by author
+    - interfacer        # deprecated by author
+    - interfacebloat    # many exceptions
+    - ireturn           # "accept interfaces, return structs" isn't ironclad
+    - lll               # don't want hard limits for line length
+    - maintidx          # covered by gocyclo
+    - maligned          # readability trumps efficient struct packing
+    - nlreturn          # generous whitespace violates house style
+    - nosnakecase       # deprecated in https://github.com/golangci/golangci-lint/pull/3065
+    - scopelint         # deprecated by author
+    - structcheck       # abandoned
+    - testpackage       # internal tests are fine
+    - thelper           # we want to print out the whole stack
+    - varcheck          # abandoned
+    - wrapcheck         # don't _always_ need to wrap errors
+    - wsl               # generous whitespace violates house style
+issues:
+  exclude-rules:
+    - linters:
+        - revive
+      path: check/client.go
+      test: "CheckCallOption"
+    - linters:
+        - gocritic
+      path: check/file.go
+      text: "commentFormatting"
+    - linters:
+        - gocritic
+      path: check/location.go
+      text: "commentFormatting"
+    - linters:
+        - nilnil
+      path: check/rule.go
+    - linters:
+        - nilnil
+      path: check/response_writer.go
+    - linters:
+        - unparam
+      path: check/annotation.go
+    - linters:
+        - unparam
+      path: check/response.go
+    - linters:
+        - varnamelen
+      path: internal/examples/buf-plugin-timestamp-suffix/main.go
+    - linters:
+        - varnamelen
+      path: internal/pkg/xslices/xslices.go
