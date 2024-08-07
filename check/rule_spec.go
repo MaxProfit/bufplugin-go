@@ -30,11 +30,17 @@ import (
 // Generally, these are provided to Main. This library will handle Check and ListRules calls
 // based on the provided RuleSpecs.
 type RuleSpec struct {
+	// Required.
 	ID         string
 	Categories []string
-	Purpose    func(options Options) string
-	Type       RuleType
-	Handler    func(options Options) RuleHandler
+	// Required.
+	Purpose func(options Options) string
+	// Required.
+	Type           RuleType
+	Deprecated     bool
+	ReplacementIDs []string
+	// Required.
+	Handler func(options Options) RuleHandler
 }
 
 // NopPurpose is a convenience function that returns a static purpose value that does not change
@@ -72,6 +78,8 @@ func ruleSpecToRule(ruleSpec *RuleSpec, options Options) Rule {
 		ruleSpec.Categories,
 		ruleSpec.Purpose(options),
 		ruleSpec.Type,
+		ruleSpec.Deprecated,
+		ruleSpec.ReplacementIDs,
 	)
 }
 
@@ -90,6 +98,9 @@ func validateRuleSpec(_ *protovalidate.Validator, ruleSpec *RuleSpec) error {
 	}
 	if ruleSpec.Handler == nil {
 		return fmt.Errorf("RuleSpec.Handler is not set for ID %q", ruleSpec.ID)
+	}
+	if len(ruleSpec.ReplacementIDs) > 0 && !ruleSpec.Deprecated {
+		return fmt.Errorf("RuleSpec.ReplacementIDs had values %v but Deprecated was false", ruleSpec.ReplacementIDs)
 	}
 	// We do this on the server-side only, this shouldn't be used client-side.
 	// TODO: This isn't working

@@ -51,6 +51,20 @@ type Rule interface {
 	Purpose() string
 	// Type is the type of the Rule.
 	Type() RuleType
+	// Deprecated returns whether or not this Rule is deprecated.
+	//
+	// If the Rule is deprecated, it may be replaced by 0 or more Rules. These will be denoted
+	// by ReplacementIDs.
+	Deprecated() bool
+	// ReplacementIDs returns the IDs of the Rules that replace this Rule, if this Rule is deprecated.
+	//
+	// This means that the combination of the Rules specified by ReplacementIDs replace this Rule entirely,
+	// and this Rule is considered equivalent to the AND of the rules specified by ReplacementIDs.
+	//
+	// This will only be non-empty if Deprecated is true.
+	//
+	// It is not valid for a deprecated Rule to specfiy another deprecated Rule as a replacement.
+	ReplacementIDs() []string
 
 	toProto() *checkv1beta1.Rule
 
@@ -60,10 +74,12 @@ type Rule interface {
 // *** PRIVATE ***
 
 type rule struct {
-	id         string
-	categories []string
-	purpose    string
-	ruleType   RuleType
+	id             string
+	categories     []string
+	purpose        string
+	ruleType       RuleType
+	deprecated     bool
+	replacementIDs []string
 }
 
 func newRule(
@@ -71,12 +87,16 @@ func newRule(
 	categories []string,
 	purpose string,
 	ruleType RuleType,
+	deprecated bool,
+	replacementIDs []string,
 ) *rule {
 	return &rule{
-		id:         id,
-		categories: categories,
-		purpose:    purpose,
-		ruleType:   ruleType,
+		id:             id,
+		categories:     categories,
+		purpose:        purpose,
+		ruleType:       ruleType,
+		deprecated:     deprecated,
+		replacementIDs: replacementIDs,
 	}
 }
 
@@ -96,16 +116,26 @@ func (r *rule) Type() RuleType {
 	return r.ruleType
 }
 
+func (r *rule) Deprecated() bool {
+	return r.deprecated
+}
+
+func (r *rule) ReplacementIDs() []string {
+	return slices.Clone(r.replacementIDs)
+}
+
 func (r *rule) toProto() *checkv1beta1.Rule {
 	if r == nil {
 		return nil
 	}
 	protoRuleType := ruleTypeToProtoRuleType[r.ruleType]
 	return &checkv1beta1.Rule{
-		Id:         r.id,
-		Categories: r.categories,
-		Purpose:    r.purpose,
-		Type:       protoRuleType,
+		Id:             r.id,
+		Categories:     r.categories,
+		Purpose:        r.purpose,
+		Type:           protoRuleType,
+		Deprecated:     r.deprecated,
+		ReplacementIds: r.replacementIDs,
 	}
 }
 
@@ -119,5 +149,7 @@ func ruleForProtoRule(protoRule *checkv1beta1.Rule) (Rule, error) {
 		protoRule.GetCategories(),
 		protoRule.GetPurpose(),
 		ruleType,
+		protoRule.GetDeprecated(),
+		protoRule.GetReplacementIds(),
 	), nil
 }
