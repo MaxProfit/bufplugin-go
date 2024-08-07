@@ -40,20 +40,7 @@ type RuleSpec struct {
 	Deprecated     bool
 	ReplacementIDs []string
 	// Required.
-	Handler func(options Options) RuleHandler
-}
-
-// NopRuleHandler is a convenience function that returns a static RuleHandler that does not change
-// depending on options provided at runtime.
-//
-//	ruleSpec := &check.RuleSpec{
-//		ID: "FOO",
-//		Purpose: check.NopPurpose("Checks foo."),
-//		Type: check.RuleTypeLint,
-//		Handler: check.NopRuleHandler(ruleHandler),
-//	}
-func NopRuleHandler(ruleHandler RuleHandler) func(Options) RuleHandler {
-	return func(Options) RuleHandler { return ruleHandler }
+	Handler RuleHandler
 }
 
 // *** PRIVATE ***

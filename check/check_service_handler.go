@@ -85,7 +85,7 @@ func (c *checkServiceHandler) Check(
 		return nil, err
 	}
 	for _, ruleSpec := range ruleSpecs {
-		if err := ruleSpec.Handler(request.Options()).Handle(
+		if err := ruleSpec.Handler.Handle(
 			ctx,
 			multiResponseWriter.newResponseWriter(ruleSpec.ID),
 			request,

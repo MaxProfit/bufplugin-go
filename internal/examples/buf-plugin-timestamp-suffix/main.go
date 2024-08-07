@@ -31,7 +31,7 @@ var (
 		ID:      timestampSuffixID,
 		Purpose: "Checks that all google.protobuf.Timestamps end in _time.",
 		Type:    check.RuleTypeLint,
-		Handler: check.NopRuleHandler(check.RuleHandlerFunc(handleTimestampSuffix)),
+		Handler: check.RuleHandlerFunc(handleTimestampSuffix),
 	}
 
 	ruleSpecs = []*check.RuleSpec{
