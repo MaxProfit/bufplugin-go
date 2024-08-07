@@ -110,14 +110,6 @@ func (o *options) toProto() []*checkv1beta1.Option {
 
 func (*options) isOption() {}
 
-func optionsForProtoOptions(protoOptions []*checkv1beta1.Option) (Options, error) {
-	keyToValue := make(map[string][]byte, len(protoOptions))
-	for _, protoOption := range protoOptions {
-		keyToValue[protoOption.GetKey()] = protoOption.GetValue()
-	}
-	return newOptions(keyToValue)
-}
-
 func validateKeyToValue(keyToValue map[string][]byte) error {
 	for key, value := range keyToValue {
 		// This should all be validated via protovalidate, and the below doesn't

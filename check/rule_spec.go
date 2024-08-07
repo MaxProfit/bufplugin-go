@@ -34,26 +34,13 @@ type RuleSpec struct {
 	ID         string
 	Categories []string
 	// Required.
-	Purpose func(options Options) string
+	Purpose string
 	// Required.
 	Type           RuleType
 	Deprecated     bool
 	ReplacementIDs []string
 	// Required.
 	Handler func(options Options) RuleHandler
-}
-
-// NopPurpose is a convenience function that returns a static purpose value that does not change
-// depending on options provided at runtime.
-//
-//	ruleSpec := &check.RuleSpec{
-//		ID: "FOO",
-//		Purpose: check.NopPurpose("Checks foo."),
-//		Type: check.RuleTypeLint,
-//		Handler: check.NopRuleHandler(ruleHandler),
-//	}
-func NopPurpose(purpose string) func(Options) string {
-	return func(Options) string { return purpose }
 }
 
 // NopRuleHandler is a convenience function that returns a static RuleHandler that does not change
@@ -72,11 +59,11 @@ func NopRuleHandler(ruleHandler RuleHandler) func(Options) RuleHandler {
 // *** PRIVATE ***
 
 // Assumes that the RuleSpec is validated.
-func ruleSpecToRule(ruleSpec *RuleSpec, options Options) Rule {
+func ruleSpecToRule(ruleSpec *RuleSpec) Rule {
 	return newRule(
 		ruleSpec.ID,
 		ruleSpec.Categories,
-		ruleSpec.Purpose(options),
+		ruleSpec.Purpose,
 		ruleSpec.Type,
 		ruleSpec.Deprecated,
 		ruleSpec.ReplacementIDs,
@@ -87,7 +74,7 @@ func validateRuleSpec(_ *protovalidate.Validator, ruleSpec *RuleSpec) error {
 	if ruleSpec.ID == "" {
 		return errors.New("RuleSpec.ID is empty")
 	}
-	if ruleSpec.Purpose == nil {
+	if ruleSpec.Purpose == "" {
 		return fmt.Errorf("RuleSpec.Purpose is not set for ID %q", ruleSpec.ID)
 	}
 	if ruleSpec.Type == 0 {

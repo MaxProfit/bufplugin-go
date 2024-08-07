@@ -29,7 +29,7 @@ const (
 var (
 	timestampSuffixRuleSpec = &check.RuleSpec{
 		ID:      timestampSuffixID,
-		Purpose: check.NopPurpose("Checks that all google.protobuf.Timestamps end in _time."),
+		Purpose: "Checks that all google.protobuf.Timestamps end in _time.",
 		Type:    check.RuleTypeLint,
 		Handler: check.NopRuleHandler(check.RuleHandlerFunc(handleTimestampSuffix)),
 	}

@@ -108,17 +108,11 @@ func (c *checkServiceHandler) ListRules(_ context.Context, listRulesRequest *che
 	if err != nil {
 		return nil, err
 	}
-	options, err := optionsForProtoOptions(listRulesRequest.GetOptions())
-	if err != nil {
-		return nil, err
-	}
 	protoRules := xslices.Map(
 		xslices.Map(
 			ruleSpecs,
 			// Assumes validated.
-			func(ruleSpec *RuleSpec) Rule {
-				return ruleSpecToRule(ruleSpec, options)
-			},
+			ruleSpecToRule,
 		),
 		Rule.toProto,
 	)
