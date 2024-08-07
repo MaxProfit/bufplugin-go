@@ -46,6 +46,9 @@ type Request interface {
 	//
 	// This may return more than 250 IDs; the underlying Client implemention is required to do
 	// any necessary chunking.
+	//
+	// RuleHandlers can safely ignore this - the handling of RuleIDs will have already
+	// been performed prior to the Request reaching the RuleHandler.
 	RuleIDs() []string
 
 	// toProtos converts the Request into one or more CheckRequests.
