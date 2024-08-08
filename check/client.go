@@ -40,12 +40,11 @@ func NewClient(pluginrpcClient pluginrpc.Client) Client {
 	return newClient(pluginrpcClient)
 }
 
-// NewClientForRuleSpecs return a new Client that directly uses
-// the given RuleSpecs.
+// NewClientForSpec return a new Client that directly uses the given Spec.
 //
-// This can be used for directly testing a set of RuleSpecs.
-func NewClientForRuleSpecs(ruleSpecs []*RuleSpec) (Client, error) {
-	checkServiceHandler, err := newCheckServiceHandler(ruleSpecs)
+// This should primarily be used for testing.
+func NewClientForSpec(spec *Spec) (Client, error) {
+	checkServiceHandler, err := newCheckServiceHandler(spec)
 	if err != nil {
 		return nil, err
 	}

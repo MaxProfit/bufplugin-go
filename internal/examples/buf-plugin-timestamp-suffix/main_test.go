@@ -24,7 +24,7 @@ func TestTimestampSuffixSimpleSuccess(t *testing.T) {
 	t.Parallel()
 
 	checktest.TestCase{
-		RuleSpecs: ruleSpecs,
+		Spec: spec,
 		Files: &checktest.ProtoFileSpec{
 			DirPaths:  []string{"testdata/simple_success"},
 			FilePaths: []string{"simple.proto"},
@@ -36,7 +36,7 @@ func TestTimestampSuffixSimpleFailure(t *testing.T) {
 	t.Parallel()
 
 	checktest.TestCase{
-		RuleSpecs: ruleSpecs,
+		Spec: spec,
 		Files: &checktest.ProtoFileSpec{
 			DirPaths:  []string{"testdata/simple_failure"},
 			FilePaths: []string{"simple.proto"},

@@ -34,16 +34,15 @@ type checkServiceHandler struct {
 	ruleIDToIndex    map[string]int
 }
 
-func newCheckServiceHandler(ruleSpecs []*RuleSpec) (*checkServiceHandler, error) {
+func newCheckServiceHandler(spec *Spec) (*checkServiceHandler, error) {
 	validator, err := protovalidate.New()
 	if err != nil {
 		return nil, err
 	}
-	for _, ruleSpec := range ruleSpecs {
-		if err := validateRuleSpec(validator, ruleSpec); err != nil {
-			return nil, err
-		}
+	if err := validateSpec(validator, spec); err != nil {
+		return nil, err
 	}
+	ruleSpecs := spec.Rules
 	ruleIDToRuleSpec := make(map[string]*RuleSpec, len(ruleSpecs))
 	ruleIDToIndex := make(map[string]int, len(ruleSpecs))
 	for i, ruleSpec := range ruleSpecs {

@@ -38,10 +38,10 @@ import (
 
 // TestCase is a single test to run against a set of RuleSpecs.
 type TestCase struct {
-	// RuleSpecs are the RuleSpecs to test.
+	// Spec is the Spec to test.
 	//
 	// Required.
-	RuleSpecs []*check.RuleSpec
+	Spec *check.Spec
 	// Files specifies the input files to test against.
 	//
 	// Required.
@@ -66,7 +66,7 @@ type TestCase struct {
 func (c TestCase) Run(t *testing.T) {
 	ctx := context.Background()
 
-	require.NotEmpty(t, c.RuleSpecs)
+	require.NotNil(t, c.Spec)
 	require.NotNil(t, c.Files)
 
 	againstFiles, err := c.AgainstFiles.Compile(ctx)
@@ -85,7 +85,7 @@ func (c TestCase) Run(t *testing.T) {
 	require.NoError(t, err)
 	request, err := check.NewRequest(files, requestOptions...)
 	require.NoError(t, err)
-	client, err := check.NewClientForRuleSpecs(c.RuleSpecs)
+	client, err := check.NewClientForSpec(c.Spec)
 	require.NoError(t, err)
 
 	response, err := client.Check(ctx, request)

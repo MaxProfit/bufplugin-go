@@ -24,8 +24,7 @@ import (
 // RuleSpec is the spec for a Rule.
 //
 // It is used to construct a Rule on the server-side (i.e. within the plugin). It specifies the
-// ID, categories, purpose, type, and a RuleHandler to actually run the Rule logic. The purpose
-// and RuleHandler can change depending on the options provided to the plugin at runtime.
+// ID, categories, purpose, type, and a RuleHandler to actually run the Rule logic.
 //
 // Generally, these are provided to Main. This library will handle Check and ListRules calls
 // based on the provided RuleSpecs.

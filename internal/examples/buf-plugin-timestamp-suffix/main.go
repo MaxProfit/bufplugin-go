@@ -37,10 +37,14 @@ var (
 	ruleSpecs = []*check.RuleSpec{
 		timestampSuffixRuleSpec,
 	}
+
+	spec = &check.Spec{
+		Rules: ruleSpecs,
+	}
 )
 
 func main() {
-	check.Main(ruleSpecs)
+	check.Main(spec)
 }
 
 func handleTimestampSuffix(
