@@ -29,7 +29,7 @@ const defaultPageSize = 250
 // *** PRIVATE ***
 
 type checkServiceHandler struct {
-	ruleSpecs        []*RuleSpec
+	spec             *Spec
 	ruleIDToRuleSpec map[string]*RuleSpec
 	ruleIDToIndex    map[string]int
 }
@@ -42,10 +42,9 @@ func newCheckServiceHandler(spec *Spec) (*checkServiceHandler, error) {
 	if err := validateSpec(validator, spec); err != nil {
 		return nil, err
 	}
-	ruleSpecs := spec.Rules
-	ruleIDToRuleSpec := make(map[string]*RuleSpec, len(ruleSpecs))
-	ruleIDToIndex := make(map[string]int, len(ruleSpecs))
-	for i, ruleSpec := range ruleSpecs {
+	ruleIDToRuleSpec := make(map[string]*RuleSpec, len(spec.Rules))
+	ruleIDToIndex := make(map[string]int, len(spec.Rules))
+	for i, ruleSpec := range spec.Rules {
 		id := ruleSpec.ID
 		if _, ok := ruleIDToRuleSpec[id]; ok {
 			return nil, fmt.Errorf("duplicate Rule ID: %q", id)
@@ -54,7 +53,7 @@ func newCheckServiceHandler(spec *Spec) (*checkServiceHandler, error) {
 		ruleIDToIndex[id] = i
 	}
 	return &checkServiceHandler{
-		ruleSpecs:        ruleSpecs,
+		spec:             spec,
 		ruleIDToRuleSpec: ruleIDToRuleSpec,
 		ruleIDToIndex:    ruleIDToIndex,
 	}, nil
@@ -68,7 +67,13 @@ func (c *checkServiceHandler) Check(
 	if err != nil {
 		return nil, err
 	}
-	ruleSpecs := c.ruleSpecs
+	if c.spec.Before != nil {
+		ctx, request, err = c.spec.Before(ctx, request)
+		if err != nil {
+			return nil, err
+		}
+	}
+	ruleSpecs := c.spec.Rules
 	if ruleIDs := request.RuleIDs(); len(ruleIDs) > 0 {
 		ruleSpecs = make([]*RuleSpec, 0)
 		for _, ruleID := range ruleIDs {
@@ -135,15 +140,15 @@ func (c *checkServiceHandler) getRuleSpecsAndNextPageToken(pageSize int, pageTok
 	}
 	var resultRuleSpecs []*RuleSpec
 	for i := 0; i < pageSize; i++ {
-		if index >= len(c.ruleSpecs) {
+		if index >= len(c.spec.Rules) {
 			break
 		}
-		resultRuleSpecs = append(resultRuleSpecs, c.ruleSpecs[index])
+		resultRuleSpecs = append(resultRuleSpecs, c.spec.Rules[index])
 		index++
 	}
 	var nextPageToken string
-	if index < len(c.ruleSpecs) {
-		nextPageToken = c.ruleSpecs[index].ID
+	if index < len(c.spec.Rules) {
+		nextPageToken = c.spec.Rules[index].ID
 	}
 	return resultRuleSpecs, nextPageToken, nil
 }

@@ -15,6 +15,7 @@
 package check
 
 import (
+	"context"
 	"errors"
 
 	"github.com/bufbuild/protovalidate-go"
@@ -29,6 +30,12 @@ import (
 type Spec struct {
 	// Required.
 	Rules []*RuleSpec
+
+	// Before is a function that will be executed before any RuleHandlers are
+	// invoked that returns a new Context and Request. This new Context and
+	// Request will be passed to the RuleHandlers. This allows for any
+	// pre-processing that needs to occur.
+	Before func(ctx context.Context, request Request) (context.Context, Request, error)
 }
 
 // *** PRIVATE ***
