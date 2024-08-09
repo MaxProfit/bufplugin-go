@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package main implements a simple plugin that checks that all google.protobuf.Timestamp
+// fields end in "_time".
 package main
 
 import (
@@ -19,6 +21,7 @@ import (
 	"strings"
 
 	"github.com/bufbuild/bufplugin-go/check"
+	"github.com/bufbuild/bufplugin-go/check/internal/checkutil"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
@@ -31,15 +34,13 @@ var (
 		ID:      timestampSuffixID,
 		Purpose: "Checks that all google.protobuf.Timestamps end in _time.",
 		Type:    check.RuleTypeLint,
-		Handler: check.RuleHandlerFunc(handleTimestampSuffix),
-	}
-
-	ruleSpecs = []*check.RuleSpec{
-		timestampSuffixRuleSpec,
+		Handler: checkutil.NewFieldRuleHandler(checkTimestampSuffix),
 	}
 
 	spec = &check.Spec{
-		Rules: ruleSpecs,
+		Rules: []*check.RuleSpec{
+			timestampSuffixRuleSpec,
+		},
 	}
 )
 
@@ -47,29 +48,10 @@ func main() {
 	check.Main(spec)
 }
 
-func handleTimestampSuffix(
+func checkTimestampSuffix(
 	_ context.Context,
 	responseWriter check.ResponseWriter,
-	request check.Request,
-) error {
-	for _, file := range request.Files() {
-		if file.IsImport() {
-			continue
-		}
-		if err := forEachField(
-			file.FileDescriptor(),
-			func(fieldDescriptor protoreflect.FieldDescriptor) error {
-				return handleFieldDescriptor(responseWriter, fieldDescriptor)
-			},
-		); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func handleFieldDescriptor(
-	responseWriter check.ResponseWriter,
+	_ check.Request,
 	fieldDescriptor protoreflect.FieldDescriptor,
 ) error {
 	fieldDescriptorType := fieldDescriptor.Message()
@@ -84,38 +66,6 @@ func handleFieldDescriptor(
 			check.WithMessagef("Fields of type google.protobuf.Timestamp must end in _time but field name was %q.", string(fieldDescriptor.Name())),
 			check.WithDescriptor(fieldDescriptor),
 		)
-	}
-	return nil
-}
-
-func forEachField(
-	fileDescriptor protoreflect.FileDescriptor,
-	f func(protoreflect.FieldDescriptor) error,
-) error {
-	messages := fileDescriptor.Messages()
-	for i := 0; i < messages.Len(); i++ {
-		if err := forEachFieldInMessage(messages.Get(i), f); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func forEachFieldInMessage(
-	messageDescriptor protoreflect.MessageDescriptor,
-	f func(protoreflect.FieldDescriptor) error,
-) error {
-	fields := messageDescriptor.Fields()
-	for i := 0; i < fields.Len(); i++ {
-		if err := f(fields.Get(i)); err != nil {
-			return err
-		}
-	}
-	messages := messageDescriptor.Messages()
-	for i := 0; i < messages.Len(); i++ {
-		if err := forEachFieldInMessage(messages.Get(i), f); err != nil {
-			return err
-		}
 	}
 	return nil
 }

@@ -20,7 +20,7 @@ import (
 	"github.com/bufbuild/bufplugin-go/check/checktest"
 )
 
-func TestTimestampSuffixSimpleSuccess(t *testing.T) {
+func TestSimpleSuccess(t *testing.T) {
 	t.Parallel()
 
 	checktest.TestCase{
@@ -32,7 +32,7 @@ func TestTimestampSuffixSimpleSuccess(t *testing.T) {
 	}.Run(t)
 }
 
-func TestTimestampSuffixSimpleFailure(t *testing.T) {
+func TestSimpleFailure(t *testing.T) {
 	t.Parallel()
 
 	checktest.TestCase{

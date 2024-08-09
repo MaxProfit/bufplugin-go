@@ -80,7 +80,7 @@ issues:
       path: check/response.go
     - linters:
         - varnamelen
-      path: internal/examples/buf-plugin-timestamp-suffix/main.go
+      path: internal/checkutil/checkutil.go
     - linters:
         - varnamelen
       path: internal/pkg/xslices/xslices.go

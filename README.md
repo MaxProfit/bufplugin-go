@@ -8,7 +8,7 @@ bufplugin-go
 
 This is the Golang SDK for [bufplugin](https://github.com/bufbuild/bufplugin-proto).
 
-This is very early, but see the [examples](internal/examples) for how this works in practice.
+This is very early, but see the [examples](check/internal/examples) for how this works in practice.
 
 ## Status: Alpha
 
