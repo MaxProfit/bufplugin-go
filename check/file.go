@@ -16,6 +16,7 @@ package check
 
 import (
 	"fmt"
+	"slices"
 
 	checkv1beta1 "buf.build/gen/go/bufbuild/bufplugin/protocolbuffers/go/buf/plugin/check/v1beta1"
 	"google.golang.org/protobuf/reflect/protodesc"
@@ -49,6 +50,20 @@ type File interface {
 	// We use "import" as this matches with the protoc concept of --include_imports, however
 	// import is a bit of an overloaded term.
 	IsImport() bool
+
+	// IsSyntaxUnspecified denotes whether the file did not have a syntax explicitly specified.
+	//
+	// Per the FileDescriptorProto spec, it would be fine in this case to just leave the syntax field
+	// unset to denote this and to set the syntax field to "proto2" if it is specified. However,
+	// protoc does not set the syntax field if it was "proto2". Plugins may want to differentiate
+	// between "proto2" and unset, and this field allows them to.
+	IsSyntaxUnspecified() bool
+
+	// UnusedDependencyIndexes are the indexes within the Dependency field on FileDescriptorProto for
+	// those dependencies that are not used.
+	//
+	// This matches the shape of the PublicDependency and WeakDependency fields.
+	UnusedDependencyIndexes() []int32
 
 	toProto() *checkv1beta1.File
 
@@ -95,6 +110,8 @@ func FilesForProtoFiles(protoFiles []*checkv1beta1.File) ([]File, error) {
 					fileDescriptor,
 					protoFile.GetFileDescriptorProto(),
 					protoFile.GetIsImport(),
+					protoFile.GetIsSyntaxUnspecified(),
+					protoFile.GetUnusedDependency(),
 				),
 			)
 			return true
@@ -114,20 +131,26 @@ func FilesForProtoFiles(protoFiles []*checkv1beta1.File) ([]File, error) {
 // *** PRIVATE ***
 
 type file struct {
-	fileDescriptor      protoreflect.FileDescriptor
-	fileDescriptorProto *descriptorpb.FileDescriptorProto
-	isImport            bool
+	fileDescriptor          protoreflect.FileDescriptor
+	fileDescriptorProto     *descriptorpb.FileDescriptorProto
+	isImport                bool
+	isSyntaxUnspecified     bool
+	unusedDependencyIndexes []int32
 }
 
 func newFile(
 	fileDescriptor protoreflect.FileDescriptor,
 	fileDescriptorProto *descriptorpb.FileDescriptorProto,
 	isImport bool,
+	isSyntaxUnspecified bool,
+	unusedDependencyIndexes []int32,
 ) *file {
 	return &file{
-		fileDescriptor:      fileDescriptor,
-		fileDescriptorProto: fileDescriptorProto,
-		isImport:            isImport,
+		fileDescriptor:          fileDescriptor,
+		fileDescriptorProto:     fileDescriptorProto,
+		isImport:                isImport,
+		isSyntaxUnspecified:     isSyntaxUnspecified,
+		unusedDependencyIndexes: unusedDependencyIndexes,
 	}
 }
 
@@ -143,10 +166,20 @@ func (f *file) IsImport() bool {
 	return f.isImport
 }
 
+func (f *file) IsSyntaxUnspecified() bool {
+	return f.isSyntaxUnspecified
+}
+
+func (f *file) UnusedDependencyIndexes() []int32 {
+	return slices.Clone(f.unusedDependencyIndexes)
+}
+
 func (f *file) toProto() *checkv1beta1.File {
 	return &checkv1beta1.File{
 		FileDescriptorProto: f.fileDescriptorProto,
 		IsImport:            f.isImport,
+		IsSyntaxUnspecified: f.isSyntaxUnspecified,
+		UnusedDependency:    f.unusedDependencyIndexes,
 	}
 }
 

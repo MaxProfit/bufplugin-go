@@ -28,7 +28,10 @@ import (
 	"github.com/bufbuild/bufplugin-go/check"
 	"github.com/bufbuild/bufplugin-go/internal/pkg/xslices"
 	"github.com/bufbuild/protocompile"
+	"github.com/bufbuild/protocompile/linker"
+	"github.com/bufbuild/protocompile/parser"
 	"github.com/bufbuild/protocompile/protoutil"
+	"github.com/bufbuild/protocompile/reporter"
 	"github.com/bufbuild/protocompile/wellknownimports"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -123,43 +126,10 @@ func (p *ProtoFileSpec) Compile(ctx context.Context) ([]check.File, error) {
 	if p == nil {
 		return nil, nil
 	}
-	if len(p.DirPaths) == 0 {
-		return nil, errors.New("no DirPaths specified on ProtoFileSpec")
-	}
-	if len(p.FilePaths) == 0 {
-		return nil, errors.New("no FilePaths specified on ProtoFileSpec")
-	}
-
-	dirPaths := fromSlashPaths(p.DirPaths)
-	filePaths := fromSlashPaths(p.FilePaths)
-	toSlashFilePathMap := make(map[string]struct{}, len(filePaths))
-	for _, filePath := range filePaths {
-		toSlashFilePathMap[filepath.ToSlash(filePath)] = struct{}{}
-	}
-
-	compiler := protocompile.Compiler{
-		Resolver: wellknownimports.WithStandardImports(
-			&protocompile.SourceResolver{
-				ImportPaths: dirPaths,
-			},
-		),
-		SourceInfoMode: protocompile.SourceInfoStandard,
-	}
-	files, err := compiler.Compile(ctx, filePaths...)
-	if err != nil {
+	if err := validateProtoFileSpec(p); err != nil {
 		return nil, err
 	}
-	fileDescriptorSet := protoSetFromFileDescriptors(files)
-
-	protoFiles := make([]*checkv1beta1.File, len(fileDescriptorSet.GetFile()))
-	for i, fileDescriptorProto := range fileDescriptorSet.GetFile() {
-		_, ok := toSlashFilePathMap[fileDescriptorProto.GetName()]
-		protoFiles[i] = &checkv1beta1.File{
-			FileDescriptorProto: fileDescriptorProto,
-			IsImport:            !ok,
-		}
-	}
-	return check.FilesForProtoFiles(protoFiles)
+	return compile(ctx, p.DirPaths, p.FilePaths)
 }
 
 // ExpectedAnnotation contains the values expected from an Annotation.
@@ -243,7 +213,117 @@ func RequireAnnotationsEqual(t *testing.T, expectedAnnotations []ExpectedAnnotat
 
 // *** PRIVATE ***
 
-func protoSetFromFileDescriptors[D protoreflect.FileDescriptor](files []D) *descriptorpb.FileDescriptorSet {
+func validateProtoFileSpec(protoFileSpec *ProtoFileSpec) error {
+	if len(protoFileSpec.DirPaths) == 0 {
+		return errors.New("no DirPaths specified on ProtoFileSpec")
+	}
+	if len(protoFileSpec.FilePaths) == 0 {
+		return errors.New("no FilePaths specified on ProtoFileSpec")
+	}
+	return nil
+}
+
+func compile(ctx context.Context, dirPaths []string, filePaths []string) ([]check.File, error) {
+	dirPaths = fromSlashPaths(dirPaths)
+	filePaths = fromSlashPaths(filePaths)
+	toSlashFilePathMap := make(map[string]struct{}, len(filePaths))
+	for _, filePath := range filePaths {
+		toSlashFilePathMap[filepath.ToSlash(filePath)] = struct{}{}
+	}
+
+	var warningErrorsWithPos []reporter.ErrorWithPos
+	compiler := protocompile.Compiler{
+		Resolver: wellknownimports.WithStandardImports(
+			&protocompile.SourceResolver{
+				ImportPaths: dirPaths,
+			},
+		),
+		Reporter: reporter.NewReporter(
+			func(errorWithPos reporter.ErrorWithPos) error {
+				return nil
+			},
+			func(errorWithPos reporter.ErrorWithPos) {
+				warningErrorsWithPos = append(warningErrorsWithPos, errorWithPos)
+			},
+		),
+		// This is what buf uses.
+		SourceInfoMode: protocompile.SourceInfoExtraOptionLocations,
+	}
+	files, err := compiler.Compile(ctx, filePaths...)
+	if err != nil {
+		return nil, err
+	}
+	syntaxUnspecifiedFilePaths := make(map[string]struct{})
+	filePathToUnusedDependencyFilePaths := make(map[string]map[string]struct{})
+	for _, warningErrorWithPos := range warningErrorsWithPos {
+		maybeAddSyntaxUnspecified(syntaxUnspecifiedFilePaths, warningErrorWithPos)
+		maybeAddUnusedDependency(filePathToUnusedDependencyFilePaths, warningErrorWithPos)
+	}
+	fileDescriptorSet := fileDescriptorSetForFileDescriptors(files)
+
+	protoFiles := make([]*checkv1beta1.File, len(fileDescriptorSet.GetFile()))
+	for i, fileDescriptorProto := range fileDescriptorSet.GetFile() {
+		_, isNotImport := toSlashFilePathMap[fileDescriptorProto.GetName()]
+		_, isSyntaxUnspecified := syntaxUnspecifiedFilePaths[fileDescriptorProto.GetName()]
+		unusedDependencyIndexes := unusedDependencyIndexesForFilePathToUnusedDependencyFilePaths(
+			fileDescriptorProto,
+			filePathToUnusedDependencyFilePaths[fileDescriptorProto.GetName()],
+		)
+		protoFiles[i] = &checkv1beta1.File{
+			FileDescriptorProto: fileDescriptorProto,
+			IsImport:            !isNotImport,
+			IsSyntaxUnspecified: isSyntaxUnspecified,
+			UnusedDependency:    unusedDependencyIndexes,
+		}
+	}
+	return check.FilesForProtoFiles(protoFiles)
+}
+
+func unusedDependencyIndexesForFilePathToUnusedDependencyFilePaths(
+	fileDescriptorProto *descriptorpb.FileDescriptorProto,
+	unusedDependencyFilePaths map[string]struct{},
+) []int32 {
+	unusedDependencyIndexes := make([]int32, 0, len(unusedDependencyFilePaths))
+	if len(unusedDependencyFilePaths) == 0 {
+		return unusedDependencyIndexes
+	}
+	dependencyFilePaths := fileDescriptorProto.GetDependency()
+	for i := 0; i < len(dependencyFilePaths); i++ {
+		if _, ok := unusedDependencyFilePaths[dependencyFilePaths[i]]; ok {
+			unusedDependencyIndexes = append(unusedDependencyIndexes, int32(i))
+		}
+	}
+	return unusedDependencyIndexes
+}
+
+func maybeAddSyntaxUnspecified(
+	syntaxUnspecifiedFilePaths map[string]struct{},
+	errorWithPos reporter.ErrorWithPos,
+) {
+	if !errors.Is(errorWithPos, parser.ErrNoSyntax) {
+		return
+	}
+	syntaxUnspecifiedFilePaths[errorWithPos.GetPosition().Filename] = struct{}{}
+}
+
+func maybeAddUnusedDependency(
+	filePathToUnusedDependencyFilePaths map[string]map[string]struct{},
+	errorWithPos reporter.ErrorWithPos,
+) {
+	var errorUnusedImport linker.ErrorUnusedImport
+	if !errors.As(errorWithPos, &errorUnusedImport) {
+		return
+	}
+	pos := errorWithPos.GetPosition()
+	unusedDependencyFilePaths, ok := filePathToUnusedDependencyFilePaths[pos.Filename]
+	if !ok {
+		unusedDependencyFilePaths = make(map[string]struct{})
+		filePathToUnusedDependencyFilePaths[pos.Filename] = unusedDependencyFilePaths
+	}
+	unusedDependencyFilePaths[errorUnusedImport.UnusedImport()] = struct{}{}
+}
+
+func fileDescriptorSetForFileDescriptors[D protoreflect.FileDescriptor](files []D) *descriptorpb.FileDescriptorSet {
 	soFar := make(map[string]struct{}, len(files))
 	slice := make([]*descriptorpb.FileDescriptorProto, 0, len(files))
 	for _, file := range files {
