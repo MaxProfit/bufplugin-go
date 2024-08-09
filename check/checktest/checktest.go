@@ -51,6 +51,8 @@ type TestCase struct {
 	Files *ProtoFileSpec
 	// AgainstFiles specifies the input against files to test against, if anoy.
 	AgainstFiles *ProtoFileSpec
+	// RuleIDs are the specific RuleIDs to run.
+	RuleIDs []string
 	// Options are any options to pass to the plugin.
 	Options map[string][]byte
 	// ExpectedAnnotations are the expected Annotations that should be returned.
@@ -81,6 +83,12 @@ func (c TestCase) Run(t *testing.T) {
 		requestOptions = append(
 			requestOptions,
 			check.WithOption(key, value),
+		)
+	}
+	if len(c.RuleIDs) > 0 {
+		requestOptions = append(
+			requestOptions,
+			check.WithRuleIDs(c.RuleIDs...),
 		)
 	}
 

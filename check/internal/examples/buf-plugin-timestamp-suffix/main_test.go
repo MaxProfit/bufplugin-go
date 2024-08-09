@@ -41,6 +41,9 @@ func TestSimpleFailure(t *testing.T) {
 			DirPaths:  []string{"testdata/simple_failure"},
 			FilePaths: []string{"simple.proto"},
 		},
+		// This linter only has a single Rule, so this has no effect in this
+		// test, however this is how you scope a test to a single Rule.
+		RuleIDs: []string{timestampSuffixID},
 		ExpectedAnnotations: []checktest.ExpectedAnnotation{
 			{
 				ID: timestampSuffixID,
