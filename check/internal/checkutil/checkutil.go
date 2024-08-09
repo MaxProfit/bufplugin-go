@@ -52,12 +52,11 @@ func NewFileRuleHandler(
 	)
 }
 
-// NewFieldRuleHandler returns a new RuleHandler that will call f for every field in
-// the messages within Files.
+// NewMessageRuleHandler returns a new RuleHandler that will call f for every message within Files.
 //
 // Imports are filtered. This is the standard case for lint rules.
-func NewFieldRuleHandler(
-	f func(context.Context, check.ResponseWriter, check.Request, protoreflect.FieldDescriptor) error,
+func NewMessageRuleHandler(
+	f func(context.Context, check.ResponseWriter, check.Request, protoreflect.MessageDescriptor) error,
 ) check.RuleHandler {
 	return NewFileRuleHandler(
 		func(
@@ -66,42 +65,52 @@ func NewFieldRuleHandler(
 			request check.Request,
 			file check.File,
 		) error {
-			return forEachField(
-				file.FileDescriptor(),
-				func(fieldDescriptor protoreflect.FieldDescriptor) error {
-					return f(ctx, responseWriter, request, fieldDescriptor)
+			return forEachMessage(
+				file.FileDescriptor().Messages(),
+				func(messageDescriptor protoreflect.MessageDescriptor) error {
+					return f(ctx, responseWriter, request, messageDescriptor)
 				},
 			)
 		},
 	)
 }
 
-func forEachField(
-	fileDescriptor protoreflect.FileDescriptor,
-	f func(protoreflect.FieldDescriptor) error,
-) error {
-	messages := fileDescriptor.Messages()
-	for i := 0; i < messages.Len(); i++ {
-		if err := forEachFieldInMessage(messages.Get(i), f); err != nil {
-			return err
-		}
-	}
-	return nil
+// NewFieldRuleHandler returns a new RuleHandler that will call f for every field in
+// the messages within Files.
+//
+// Imports are filtered. This is the standard case for lint rules.
+func NewFieldRuleHandler(
+	f func(context.Context, check.ResponseWriter, check.Request, protoreflect.FieldDescriptor) error,
+) check.RuleHandler {
+	return NewMessageRuleHandler(
+		func(
+			ctx context.Context,
+			responseWriter check.ResponseWriter,
+			request check.Request,
+			messageDescriptor protoreflect.MessageDescriptor,
+		) error {
+			fields := messageDescriptor.Fields()
+			for i := 0; i < fields.Len(); i++ {
+				if err := f(ctx, responseWriter, request, fields.Get(i)); err != nil {
+					return err
+				}
+			}
+			return nil
+		},
+	)
 }
 
-func forEachFieldInMessage(
-	messageDescriptor protoreflect.MessageDescriptor,
-	f func(protoreflect.FieldDescriptor) error,
+func forEachMessage(
+	messages protoreflect.MessageDescriptors,
+	f func(protoreflect.MessageDescriptor) error,
 ) error {
-	fields := messageDescriptor.Fields()
-	for i := 0; i < fields.Len(); i++ {
-		if err := f(fields.Get(i)); err != nil {
+	for i := 0; i < messages.Len(); i++ {
+		messageDescriptor := messages.Get(i)
+		if err := f(messageDescriptor); err != nil {
 			return err
 		}
-	}
-	messages := messageDescriptor.Messages()
-	for i := 0; i < messages.Len(); i++ {
-		if err := forEachFieldInMessage(messages.Get(i), f); err != nil {
+		// Nested messages.
+		if err := forEachMessage(messageDescriptor.Messages(), f); err != nil {
 			return err
 		}
 	}
