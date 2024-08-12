@@ -14,6 +14,11 @@
 
 package xslices
 
+import (
+	"cmp"
+	"slices"
+)
+
 // Map maps the slice.
 func Map[T1, T2 any](s []T1, f func(T1) T2) []T2 {
 	if s == nil {
@@ -42,4 +47,20 @@ func MapError[T1, T2 any](s []T1, f func(T1) (T2, error)) ([]T2, error) {
 		sm[i] = em
 	}
 	return sm, nil
+}
+
+// MapKeysToSortedSlice converts the map's keys to a sorted slice.
+func MapKeysToSortedSlice[M ~map[K]V, K cmp.Ordered, V any](m M) []K {
+	s := MapKeysToSlice(m)
+	slices.Sort(s)
+	return s
+}
+
+// MapKeysToSlice converts the map's keys to a slice.
+func MapKeysToSlice[K comparable, V any](m map[K]V) []K {
+	s := make([]K, 0, len(m))
+	for k := range m {
+		s = append(s, k)
+	}
+	return s
 }

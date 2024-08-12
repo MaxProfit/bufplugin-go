@@ -31,6 +31,8 @@ import (
 	checkv1beta1 "buf.build/gen/go/bufbuild/bufplugin/protocolbuffers/go/buf/plugin/check/v1beta1"
 )
 
+var emptyOptions = newOptionsNoValidate(nil)
+
 // Options are key/values that can control the behavior of a RuleHandler,
 // and can control the value of the Purpose string of the Rule.
 //
@@ -43,7 +45,8 @@ type Options interface {
 	// Get gets the option value for the given key.
 	//
 	// It is not possible to set an option with an empty value. If you want to specify
-	// set or not set, use a sentinel value such as "true" or "1".
+	// set or not set, use a sentinel value such as "true" or "1". Get will always return nil
+	// if the value is empty. There is no semantic difference between nil and empty.
 	//
 	// The value is a []byte to allow plugins to encode whatever information they wish, however
 	// plugin authors are responsible for parsing. For example, users may want to specify a number,
@@ -59,17 +62,27 @@ type Options interface {
 	isOption()
 }
 
-// *** PRIVATE ***
-
-type options struct {
-	keyToValue map[string][]byte
-}
-
-func newOptions(keyToValue map[string][]byte) (*options, error) {
+// NewOptions returns a new validated Options for the given key/value map.
+func NewOptions(keyToValue map[string][]byte) (Options, error) {
 	if err := validateKeyToValue(keyToValue); err != nil {
 		return nil, err
 	}
 	return newOptionsNoValidate(keyToValue), nil
+}
+
+// OptionsForProtoOptions returns a new Options for the given checkv1beta1.Options.
+func OptionsForProtoOptions(protoOptions []*checkv1beta1.Option) (Options, error) {
+	keyToValue := make(map[string][]byte, len(protoOptions))
+	for _, protoOption := range protoOptions {
+		keyToValue[protoOption.GetKey()] = protoOption.GetValue()
+	}
+	return NewOptions(keyToValue)
+}
+
+// *** PRIVATE ***
+
+type options struct {
+	keyToValue map[string][]byte
 }
 
 func newOptionsNoValidate(keyToValue map[string][]byte) *options {

@@ -76,14 +76,11 @@ func (c TestCase) Run(t *testing.T) {
 
 	againstFiles, err := c.AgainstFiles.Compile(ctx)
 	require.NoError(t, err)
+	options, err := check.NewOptions(c.Options)
+	require.NoError(t, err)
 	requestOptions := []check.RequestOption{
 		check.WithAgainstFiles(againstFiles),
-	}
-	for key, value := range c.Options {
-		requestOptions = append(
-			requestOptions,
-			check.WithOption(key, value),
-		)
+		check.WithOptions(options),
 	}
 	if len(c.RuleIDs) > 0 {
 		requestOptions = append(

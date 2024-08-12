@@ -16,7 +16,6 @@ package check
 
 import (
 	"slices"
-	"sort"
 
 	checkv1beta1 "buf.build/gen/go/bufbuild/bufplugin/protocolbuffers/go/buf/plugin/check/v1beta1"
 	"github.com/bufbuild/bufplugin-go/internal/pkg/xslices"
@@ -68,7 +67,7 @@ func NewRequest(
 	files []File,
 	options ...RequestOption,
 ) (Request, error) {
-	return newRequest(files, options...)
+	return newRequest(files, options...), nil
 }
 
 // RequestOption is an option for a new Request.
@@ -81,11 +80,10 @@ func WithAgainstFiles(againstFiles []File) RequestOption {
 	}
 }
 
-// WithOption adds the given option to the Request.
-func WithOption(key string, value []byte) RequestOption {
-	// TODO: validate that duplicate keys are not specified
+// WithOption adds the given Options to the Request.
+func WithOptions(options Options) RequestOption {
 	return func(requestOptions *requestOptions) {
-		requestOptions.keyToValue[key] = value
+		requestOptions.options = options
 	}
 }
 
@@ -110,14 +108,16 @@ func RequestForProtoRequest(protoRequest *checkv1beta1.CheckRequest) (Request, e
 	if err != nil {
 		return nil, err
 	}
-	requestOptions := []RequestOption{
+	options, err := OptionsForProtoOptions(protoRequest.GetOptions())
+	if err != nil {
+		return nil, err
+	}
+	return NewRequest(
+		files,
 		WithAgainstFiles(againstFiles),
+		WithOptions(options),
 		WithRuleIDs(protoRequest.GetRuleIds()...),
-	}
-	for _, protoOption := range protoRequest.GetOptions() {
-		requestOptions = append(requestOptions, WithOption(protoOption.GetKey(), protoOption.GetValue()))
-	}
-	return NewRequest(files, requestOptions...)
+	)
 }
 
 // *** PRIVATE ***
@@ -132,27 +132,21 @@ type request struct {
 func newRequest(
 	files []File,
 	options ...RequestOption,
-) (*request, error) {
+) *request {
 	requestOptions := newRequestOptions()
 	for _, option := range options {
 		option(requestOptions)
 	}
-	optionsIface, err := newOptions(requestOptions.keyToValue)
-	if err != nil {
-		return nil, err
+	if requestOptions.options == nil {
+		requestOptions.options = emptyOptions
 	}
-	ruleIDs := make([]string, 0, len(requestOptions.ruleIDMap))
-	for ruleID := range requestOptions.ruleIDMap {
-		ruleIDs = append(ruleIDs, ruleID)
-	}
-	sort.Strings(ruleIDs)
 	// TODO: need to validate Files and AgainstFiles per protovalidate specs
 	return &request{
 		files:        files,
 		againstFiles: requestOptions.againstFiles,
-		options:      optionsIface,
-		ruleIDs:      ruleIDs,
-	}, nil
+		options:      requestOptions.options,
+		ruleIDs:      xslices.MapKeysToSortedSlice(requestOptions.ruleIDMap),
+	}
 }
 
 func (r *request) Files() []File {
@@ -211,13 +205,12 @@ func (*request) isRequest() {}
 
 type requestOptions struct {
 	againstFiles []File
-	keyToValue   map[string][]byte
+	options      Options
 	ruleIDMap    map[string]struct{}
 }
 
 func newRequestOptions() *requestOptions {
 	return &requestOptions{
-		keyToValue: make(map[string][]byte),
-		ruleIDMap:  make(map[string]struct{}),
+		ruleIDMap: make(map[string]struct{}),
 	}
 }
