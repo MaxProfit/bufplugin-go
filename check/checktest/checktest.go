@@ -244,7 +244,7 @@ func compile(ctx context.Context, dirPaths []string, filePaths []string) ([]chec
 			},
 		),
 		Reporter: reporter.NewReporter(
-			func(errorWithPos reporter.ErrorWithPos) error {
+			func(reporter.ErrorWithPos) error {
 				return nil
 			},
 			func(errorWithPos reporter.ErrorWithPos) {
@@ -293,7 +293,7 @@ func unusedDependencyIndexesForFilePathToUnusedDependencyFilePaths(
 		return unusedDependencyIndexes
 	}
 	dependencyFilePaths := fileDescriptorProto.GetDependency()
-	for i := 0; i < len(dependencyFilePaths); i++ {
+	for i := range len(dependencyFilePaths) {
 		if _, ok := unusedDependencyFilePaths[dependencyFilePaths[i]]; ok {
 			unusedDependencyIndexes = append(unusedDependencyIndexes, int32(i))
 		}

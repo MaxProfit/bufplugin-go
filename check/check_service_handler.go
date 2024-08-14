@@ -138,8 +138,8 @@ func (c *checkServiceHandler) getRuleSpecsAndNextPageToken(pageSize int, pageTok
 	if pageSize == 0 {
 		pageSize = defaultPageSize
 	}
-	var resultRuleSpecs []*RuleSpec
-	for i := 0; i < pageSize; i++ {
+	resultRuleSpecs := make([]*RuleSpec, 0, len(c.spec.Rules)-index)
+	for range pageSize {
 		if index >= len(c.spec.Rules) {
 			break
 		}

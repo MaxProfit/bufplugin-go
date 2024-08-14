@@ -2,5 +2,3 @@
 *.pprof
 *.svg
 cover.out
-
-/internal/examples/buf-plugin-timestamp-suffix/buf-plugin-timestamp-suffix

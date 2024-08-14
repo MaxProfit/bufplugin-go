@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package syntaxunspecified
 
 import (
 	"testing"
@@ -24,7 +24,7 @@ func TestSimpleSuccess(t *testing.T) {
 	t.Parallel()
 
 	checktest.TestCase{
-		Spec: spec,
+		Spec: Spec,
 		Files: &checktest.ProtoFileSpec{
 			DirPaths:  []string{"testdata/simple_success"},
 			FilePaths: []string{"simple.proto"},
@@ -36,14 +36,14 @@ func TestSimpleFailure(t *testing.T) {
 	t.Parallel()
 
 	checktest.TestCase{
-		Spec: spec,
+		Spec: Spec,
 		Files: &checktest.ProtoFileSpec{
 			DirPaths:  []string{"testdata/simple_failure"},
 			FilePaths: []string{"simple.proto"},
 		},
 		ExpectedAnnotations: []checktest.ExpectedAnnotation{
 			{
-				ID: syntaxUnspecifiedID,
+				ID: SyntaxUnspecifiedRuleID,
 				Location: &checktest.ExpectedLocation{
 					FileName: "simple.proto",
 				},

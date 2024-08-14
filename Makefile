@@ -13,9 +13,9 @@ COPYRIGHT_YEARS := 2024
 LICENSE_IGNORE := --ignore testdata/
 
 BUF_VERSION := v1.36.0
-GOLANGCI_LINT_VERSION := v1.55.2
+GOLANGCI_LINT_VERSION := v1.60.0
 # https://github.com/golangci/golangci-lint/issues/4837
-GOLANGCI_LINT_GOTOOLCHAIN := go1.22.5
+GOLANGCI_LINT_GOTOOLCHAIN := go1.23.0
 
 .PHONY: help
 help: ## Describe useful make targets

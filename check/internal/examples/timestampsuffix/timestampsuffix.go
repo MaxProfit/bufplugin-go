@@ -12,9 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package main implements a simple plugin that checks that all google.protobuf.Timestamp
-// fields end in "_time".
-package main
+// Package timestampsuffix implements a simple plugin that checks that all
+// google.protobuf.Timestamp fields end in "_time".
+//
+// See cmd/buf-plugin-timestamp-suffix for the plugin main.
+package timestampsuffix
 
 import (
 	"context"
@@ -25,28 +27,25 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
-const (
-	timestampSuffixID = "TIMESTAMP_SUFFIX"
-)
+// TimestampSuffixRuleID is the Rule ID of the timestamp suffix Rule.
+const TimestampSuffixRuleID = "TIMESTAMP_SUFFIX"
 
 var (
-	timestampSuffixRuleSpec = &check.RuleSpec{
-		ID:      timestampSuffixID,
+	// TimestampSuffixRuleSpec is the RuleSpec for the timestamp suffix Rule.
+	TimestampSuffixRuleSpec = &check.RuleSpec{
+		ID:      TimestampSuffixRuleID,
 		Purpose: "Checks that all google.protobuf.Timestamps end in _time.",
 		Type:    check.RuleTypeLint,
 		Handler: checkutil.NewFieldRuleHandler(checkTimestampSuffix),
 	}
 
-	spec = &check.Spec{
+	// Spec is the Spec for the timestamp suffix plugin.
+	Spec = &check.Spec{
 		Rules: []*check.RuleSpec{
-			timestampSuffixRuleSpec,
+			TimestampSuffixRuleSpec,
 		},
 	}
 )
-
-func main() {
-	check.Main(spec)
-}
 
 func checkTimestampSuffix(
 	_ context.Context,

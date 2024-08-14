@@ -12,12 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package main implements a simple plugin that checks that syntax is unspecified
-// in every file.
+// Package syntaxunspecified implements a simple plugin that checks that syntax
+// is unspecified in every file.
 //
 // This is just demonstrating the additional functionality that check.Files have
 // over FileDescriptorProtos. We have no idea why you'd actually want to lint this.
-package main
+//
+// See cmd/buf-plugin-syntax-unspecified for the plugin main.
+package syntaxunspecified
 
 import (
 	"context"
@@ -26,28 +28,25 @@ import (
 	"github.com/bufbuild/bufplugin-go/check/internal/checkutil"
 )
 
-const (
-	syntaxUnspecifiedID = "SYNTAX_UNSPECIFIED"
-)
+// SyntaxUnspecifiedRuleID is the Rule ID of the syntax unspecified Rule.
+const SyntaxUnspecifiedRuleID = "SYNTAX_UNSPECIFIED"
 
 var (
-	syntaxUnspecifiedRuleSpec = &check.RuleSpec{
-		ID:      syntaxUnspecifiedID,
+	// SyntaxUnspecifiedRuleSpec is the RuleSpec for the syntax unspecified Rule.
+	SyntaxUnspecifiedRuleSpec = &check.RuleSpec{
+		ID:      SyntaxUnspecifiedRuleID,
 		Purpose: "Checks that syntax is never specified.",
 		Type:    check.RuleTypeLint,
 		Handler: checkutil.NewFileRuleHandler(checkSyntaxUnspecified),
 	}
 
-	spec = &check.Spec{
+	// Spec is the Spec for the syntax unspecified plugin.
+	Spec = &check.Spec{
 		Rules: []*check.RuleSpec{
-			syntaxUnspecifiedRuleSpec,
+			SyntaxUnspecifiedRuleSpec,
 		},
 	}
 )
-
-func main() {
-	check.Main(spec)
-}
 
 func checkSyntaxUnspecified(
 	_ context.Context,

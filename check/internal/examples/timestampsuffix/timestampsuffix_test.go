@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package timestampsuffix
 
 import (
 	"testing"
@@ -24,7 +24,7 @@ func TestSimpleSuccess(t *testing.T) {
 	t.Parallel()
 
 	checktest.TestCase{
-		Spec: spec,
+		Spec: Spec,
 		Files: &checktest.ProtoFileSpec{
 			DirPaths:  []string{"testdata/simple_success"},
 			FilePaths: []string{"simple.proto"},
@@ -36,17 +36,17 @@ func TestSimpleFailure(t *testing.T) {
 	t.Parallel()
 
 	checktest.TestCase{
-		Spec: spec,
+		Spec: Spec,
 		Files: &checktest.ProtoFileSpec{
 			DirPaths:  []string{"testdata/simple_failure"},
 			FilePaths: []string{"simple.proto"},
 		},
 		// This linter only has a single Rule, so this has no effect in this
 		// test, however this is how you scope a test to a single Rule.
-		RuleIDs: []string{timestampSuffixID},
+		RuleIDs: []string{TimestampSuffixRuleID},
 		ExpectedAnnotations: []checktest.ExpectedAnnotation{
 			{
-				ID: timestampSuffixID,
+				ID: TimestampSuffixRuleID,
 				Location: &checktest.ExpectedLocation{
 					FileName:    "simple.proto",
 					StartLine:   8,

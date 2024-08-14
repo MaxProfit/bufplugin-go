@@ -90,7 +90,7 @@ func NewFieldRuleHandler(
 			messageDescriptor protoreflect.MessageDescriptor,
 		) error {
 			fields := messageDescriptor.Fields()
-			for i := 0; i < fields.Len(); i++ {
+			for i := range fields.Len() {
 				if err := f(ctx, responseWriter, request, fields.Get(i)); err != nil {
 					return err
 				}
@@ -104,7 +104,7 @@ func forEachMessage(
 	messages protoreflect.MessageDescriptors,
 	f func(protoreflect.MessageDescriptor) error,
 ) error {
-	for i := 0; i < messages.Len(); i++ {
+	for i := range messages.Len() {
 		messageDescriptor := messages.Get(i)
 		if err := f(messageDescriptor); err != nil {
 			return err
