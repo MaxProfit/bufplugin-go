@@ -68,6 +68,12 @@ issues:
         - unparam
       path: check/response.go
     - linters:
+        - nilnil
+      path: check/checktest/checktest.go
+    - linters:
+        - varnamelen
+      path: check/internal/examples
+    - linters:
         - varnamelen
       path: internal/checkutil/checkutil.go
     - linters:
