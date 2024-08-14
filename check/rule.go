@@ -16,8 +16,10 @@ package check
 
 import (
 	"slices"
+	"sort"
 
 	checkv1beta1 "buf.build/gen/go/bufbuild/bufplugin/protocolbuffers/go/buf/plugin/check/v1beta1"
+	"github.com/bufbuild/bufplugin-go/internal/pkg/xslices"
 )
 
 // Rule is a single lint or breaking change rule.
@@ -152,4 +154,30 @@ func ruleForProtoRule(protoRule *checkv1beta1.Rule) (Rule, error) {
 		protoRule.GetDeprecated(),
 		protoRule.GetReplacementIds(),
 	), nil
+}
+
+func sortRules(rules []Rule) {
+	sort.Slice(rules, func(i int, j int) bool { return rules[i].ID() < rules[j].ID() })
+}
+
+func validateNoDuplicateRules(rules []Rule) error {
+	return validateNoDuplicateRuleIDs(xslices.Map(rules, Rule.ID))
+}
+
+func validateNoDuplicateRuleIDs(ruleIDs []string) error {
+	ruleIDToCount := make(map[string]int, len(ruleIDs))
+	for _, ruleID := range ruleIDs {
+		ruleIDToCount[ruleID]++
+	}
+	var duplicateRuleIDs []string
+	for ruleID, count := range ruleIDToCount {
+		if count > 1 {
+			duplicateRuleIDs = append(duplicateRuleIDs, ruleID)
+		}
+	}
+	if len(duplicateRuleIDs) > 0 {
+		sort.Strings(duplicateRuleIDs)
+		return newDuplicateRuleError(duplicateRuleIDs)
+	}
+	return nil
 }

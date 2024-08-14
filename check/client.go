@@ -16,6 +16,7 @@ package check
 
 import (
 	"context"
+	"sync"
 
 	checkv1beta1 "buf.build/gen/go/bufbuild/bufplugin/protocolbuffers/go/buf/plugin/check/v1beta1"
 	"github.com/bufbuild/bufplugin-go/internal/gen/buf/plugin/check/v1beta1/v1beta1pluginrpc"
@@ -32,18 +33,36 @@ type Client interface {
 	// Check invokes a check using the plugin..
 	Check(ctx context.Context, request Request, options ...CheckCallOption) (Response, error)
 	// ListRules lists all available Rules from the plugin.
+	//
+	// The Rules will be sorted by Rule ID.
+	// Returns error if duplicate Rule IDs were detected from the underlying source.
 	ListRules(ctx context.Context, options ...ListRulesCallOption) ([]Rule, error)
+
+	isClient()
 }
 
 // NewClient returns a new Client for the given pluginrpc.Client.
-func NewClient(pluginrpcClient pluginrpc.Client) Client {
-	return newClient(pluginrpcClient)
+func NewClient(pluginrpcClient pluginrpc.Client, options ...ClientOption) Client {
+	return newClient(pluginrpcClient, options...)
+}
+
+// ClientOption is an option for a new Client.
+type ClientOption func(*clientOptions)
+
+// ClientWithCacheRules returns a new ClientOption that will result in the Rules from
+// ListRules being cached.
+//
+// The default is to not cache Rules.
+func ClientWithCacheRules() ClientOption {
+	return func(clientOptions *clientOptions) {
+		clientOptions.cacheRules = true
+	}
 }
 
 // NewClientForSpec return a new Client that directly uses the given Spec.
 //
 // This should primarily be used for testing.
-func NewClientForSpec(spec *Spec) (Client, error) {
+func NewClientForSpec(spec *Spec, options ...ClientOption) (Client, error) {
 	checkServiceHandler, err := newCheckServiceHandler(spec)
 	if err != nil {
 		return nil, err
@@ -52,7 +71,7 @@ func NewClientForSpec(spec *Spec) (Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	return newClient(pluginrpc.NewClient(pluginrpc.NewServerRunner(checkServer))), nil
+	return newClient(pluginrpc.NewClient(pluginrpc.NewServerRunner(checkServer)), options...), nil
 }
 
 // CheckCallOption is an option for a Client.Check call.
@@ -65,13 +84,24 @@ type ListRulesCallOption func(*listRulesCallOptions)
 
 type client struct {
 	pluginrpcClient pluginrpc.Client
+
+	cacheRules     bool
+	cachedRules    []Rule
+	cachedRulesErr error
+	lock           sync.RWMutex
 }
 
 func newClient(
 	pluginrpcClient pluginrpc.Client,
+	options ...ClientOption,
 ) *client {
+	clientOptions := newClientOptions()
+	for _, option := range options {
+		option(clientOptions)
+	}
 	return &client{
 		pluginrpcClient: pluginrpcClient,
+		cacheRules:      clientOptions.cacheRules,
 	}
 }
 
@@ -104,6 +134,25 @@ func (c *client) Check(ctx context.Context, request Request, _ ...CheckCallOptio
 }
 
 func (c *client) ListRules(ctx context.Context, _ ...ListRulesCallOption) ([]Rule, error) {
+	if !c.cacheRules {
+		return c.listRulesUncached(ctx)
+	}
+	c.lock.RLock()
+	if len(c.cachedRules) > 0 || c.cachedRulesErr != nil {
+		c.lock.RUnlock()
+		return c.cachedRules, c.cachedRulesErr
+	}
+	c.lock.RUnlock()
+
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	if len(c.cachedRules) == 0 && c.cachedRulesErr == nil {
+		c.cachedRules, c.cachedRulesErr = c.listRulesUncached(ctx)
+	}
+	return c.cachedRules, c.cachedRulesErr
+}
+
+func (c *client) listRulesUncached(ctx context.Context) ([]Rule, error) {
 	checkServiceClient, err := c.newCheckServiceClient()
 	if err != nil {
 		return nil, err
@@ -127,11 +176,29 @@ func (c *client) ListRules(ctx context.Context, _ ...ListRulesCallOption) ([]Rul
 			break
 		}
 	}
-	return xslices.MapError(protoRules, ruleForProtoRule)
+	rules, err := xslices.MapError(protoRules, ruleForProtoRule)
+	if err != nil {
+		return nil, err
+	}
+	if err := validateNoDuplicateRules(rules); err != nil {
+		return nil, err
+	}
+	sortRules(rules)
+	return rules, nil
 }
 
 func (c *client) newCheckServiceClient() (v1beta1pluginrpc.CheckServiceClient, error) {
 	return v1beta1pluginrpc.NewCheckServiceClient(c.pluginrpcClient)
+}
+
+func (*client) isClient() {}
+
+type clientOptions struct {
+	cacheRules bool
+}
+
+func newClientOptions() *clientOptions {
+	return &clientOptions{}
 }
 
 type checkCallOptions struct{}

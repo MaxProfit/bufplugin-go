@@ -24,6 +24,8 @@ import (
 // Response is a response from a plugin for a check call.
 type Response interface {
 	// Annotations returns all of the Annotations.
+	//
+	// TODO: sort order.
 	Annotations() []Annotation
 
 	toProto() *checkv1beta1.CheckResponse
@@ -39,6 +41,7 @@ type response struct {
 
 func newResponse(annotations []Annotation) (*response, error) {
 	// TODO: validation? Leaving error for now
+	// TODO: sort
 	return &response{
 		annotations: annotations,
 	}, nil

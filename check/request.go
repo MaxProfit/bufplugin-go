@@ -16,6 +16,7 @@ package check
 
 import (
 	"slices"
+	"sort"
 
 	checkv1beta1 "buf.build/gen/go/bufbuild/bufplugin/protocolbuffers/go/buf/plugin/check/v1beta1"
 	"github.com/bufbuild/bufplugin-go/internal/pkg/xslices"
@@ -67,7 +68,7 @@ func NewRequest(
 	files []File,
 	options ...RequestOption,
 ) (Request, error) {
-	return newRequest(files, options...), nil
+	return newRequest(files, options...)
 }
 
 // RequestOption is an option for a new Request.
@@ -90,11 +91,10 @@ func WithOptions(options Options) RequestOption {
 // WithRuleIDs specifies that the given rule IDs should be used on the Request.
 //
 // Multiple calls to WithRuleIDs will result in the new rule IDs being appended.
+// If duplicate rule IDs are specified, this will result in an error.
 func WithRuleIDs(ruleIDs ...string) RequestOption {
 	return func(requestOptions *requestOptions) {
-		for _, ruleID := range ruleIDs {
-			requestOptions.ruleIDMap[ruleID] = struct{}{}
-		}
+		requestOptions.ruleIDs = append(requestOptions.ruleIDs, ruleIDs...)
 	}
 }
 
@@ -132,7 +132,7 @@ type request struct {
 func newRequest(
 	files []File,
 	options ...RequestOption,
-) *request {
+) (*request, error) {
 	requestOptions := newRequestOptions()
 	for _, option := range options {
 		option(requestOptions)
@@ -140,13 +140,17 @@ func newRequest(
 	if requestOptions.options == nil {
 		requestOptions.options = emptyOptions
 	}
+	if err := validateNoDuplicateRuleIDs(requestOptions.ruleIDs); err != nil {
+		return nil, err
+	}
+	sort.Strings(requestOptions.ruleIDs)
 	// TODO: need to validate Files and AgainstFiles per protovalidate specs
 	return &request{
 		files:        files,
 		againstFiles: requestOptions.againstFiles,
 		options:      requestOptions.options,
-		ruleIDs:      xslices.MapKeysToSortedSlice(requestOptions.ruleIDMap),
-	}
+		ruleIDs:      requestOptions.ruleIDs,
+	}, nil
 }
 
 func (r *request) Files() []File {
@@ -206,11 +210,9 @@ func (*request) isRequest() {}
 type requestOptions struct {
 	againstFiles []File
 	options      Options
-	ruleIDMap    map[string]struct{}
+	ruleIDs      []string
 }
 
 func newRequestOptions() *requestOptions {
-	return &requestOptions{
-		ruleIDMap: make(map[string]struct{}),
-	}
+	return &requestOptions{}
 }
