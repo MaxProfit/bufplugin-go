@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package timestampsuffix
+package fieldlowersnakecase
 
 import (
 	"testing"
@@ -29,20 +29,17 @@ func TestSimple(t *testing.T) {
 				DirPaths:  []string{"testdata/simple"},
 				FilePaths: []string{"simple.proto"},
 			},
-			// This linter only has a single Rule, so this has no effect in this
-			// test, however this is how you scope a test to a single Rule.
-			RuleIDs: []string{TimestampSuffixRuleID},
 		},
 		Spec: Spec,
 		ExpectedAnnotations: []checktest.ExpectedAnnotation{
 			{
-				ID: TimestampSuffixRuleID,
+				ID: FieldLowerSnakeCaseRuleID,
 				Location: &checktest.ExpectedLocation{
 					FileName:    "simple.proto",
-					StartLine:   8,
+					StartLine:   6,
 					StartColumn: 2,
-					EndLine:     8,
-					EndColumn:   50,
+					EndLine:     6,
+					EndColumn:   23,
 				},
 			},
 		},

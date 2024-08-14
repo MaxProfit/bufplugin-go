@@ -6,4 +6,7 @@ import "google/protobuf/timestamp.proto";
 
 message Foo {
   google.protobuf.Timestamp valid_time = 1;
+  int32 lower_snake_case = 2;
+  google.protobuf.Timestamp invalid_timestamp = 3;
+  int32 PascalCase = 4;
 }

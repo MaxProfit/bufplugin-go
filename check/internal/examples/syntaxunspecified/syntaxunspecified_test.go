@@ -24,11 +24,13 @@ func TestSimpleSuccess(t *testing.T) {
 	t.Parallel()
 
 	checktest.TestCase{
-		Spec: Spec,
-		Files: &checktest.ProtoFileSpec{
-			DirPaths:  []string{"testdata/simple_success"},
-			FilePaths: []string{"simple.proto"},
+		Request: &checktest.RequestSpec{
+			Files: &checktest.ProtoFileSpec{
+				DirPaths:  []string{"testdata/simple_success"},
+				FilePaths: []string{"simple.proto"},
+			},
 		},
+		Spec: Spec,
 	}.Run(t)
 }
 
@@ -36,11 +38,13 @@ func TestSimpleFailure(t *testing.T) {
 	t.Parallel()
 
 	checktest.TestCase{
-		Spec: Spec,
-		Files: &checktest.ProtoFileSpec{
-			DirPaths:  []string{"testdata/simple_failure"},
-			FilePaths: []string{"simple.proto"},
+		Request: &checktest.RequestSpec{
+			Files: &checktest.ProtoFileSpec{
+				DirPaths:  []string{"testdata/simple_failure"},
+				FilePaths: []string{"simple.proto"},
+			},
 		},
+		Spec: Spec,
 		ExpectedAnnotations: []checktest.ExpectedAnnotation{
 			{
 				ID: SyntaxUnspecifiedRuleID,

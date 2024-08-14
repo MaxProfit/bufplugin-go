@@ -41,20 +41,12 @@ import (
 
 // TestCase is a single test to run against a set of RuleSpecs.
 type TestCase struct {
+	// Request is the request spec to test.
+	Request *RequestSpec
 	// Spec is the Spec to test.
 	//
 	// Required.
 	Spec *check.Spec
-	// Files specifies the input files to test against.
-	//
-	// Required.
-	Files *ProtoFileSpec
-	// AgainstFiles specifies the input against files to test against, if anoy.
-	AgainstFiles *ProtoFileSpec
-	// RuleIDs are the specific RuleIDs to run.
-	RuleIDs []string
-	// Options are any options to pass to the plugin.
-	Options map[string][]byte
 	// ExpectedAnnotations are the expected Annotations that should be returned.
 	ExpectedAnnotations []ExpectedAnnotation
 }
@@ -71,34 +63,65 @@ type TestCase struct {
 func (c TestCase) Run(t *testing.T) {
 	ctx := context.Background()
 
+	require.NotNil(t, c.Request)
 	require.NotNil(t, c.Spec)
-	require.NotNil(t, c.Files)
 
-	againstFiles, err := c.AgainstFiles.Compile(ctx)
-	require.NoError(t, err)
-	options, err := check.NewOptions(c.Options)
-	require.NoError(t, err)
-	requestOptions := []check.RequestOption{
-		check.WithAgainstFiles(againstFiles),
-		check.WithOptions(options),
-	}
-	if len(c.RuleIDs) > 0 {
-		requestOptions = append(
-			requestOptions,
-			check.WithRuleIDs(c.RuleIDs...),
-		)
-	}
-
-	files, err := c.Files.Compile(ctx)
-	require.NoError(t, err)
-	request, err := check.NewRequest(files, requestOptions...)
+	request, err := c.Request.ToRequest(ctx)
 	require.NoError(t, err)
 	client, err := check.NewClientForSpec(c.Spec)
 	require.NoError(t, err)
-
 	response, err := client.Check(ctx, request)
 	require.NoError(t, err)
 	AssertAnnotationsEqual(t, c.ExpectedAnnotations, response.Annotations())
+}
+
+// RequestSpec specifies request parameters to be compiled for testing.
+//
+// This allows a Request to be built from a directory of .proto files.
+type RequestSpec struct {
+	// Files specifies the input files to test against.
+	//
+	// Required.
+	Files *ProtoFileSpec
+	// AgainstFiles specifies the input against files to test against, if anoy.
+	AgainstFiles *ProtoFileSpec
+	// RuleIDs are the specific RuleIDs to run.
+	RuleIDs []string
+	// Options are any options to pass to the plugin.
+	Options map[string][]byte
+}
+
+// ToRequest converts the spec into a check.Request.
+//
+// If r is nil, this returns nil.
+func (r *RequestSpec) ToRequest(ctx context.Context) (check.Request, error) {
+	if r == nil {
+		return nil, nil
+	}
+
+	if r.Files == nil {
+		return nil, errors.New("RequestSpec.Files not set")
+	}
+
+	againstFiles, err := r.AgainstFiles.ToFiles(ctx)
+	if err != nil {
+		return nil, err
+	}
+	options, err := check.NewOptions(r.Options)
+	if err != nil {
+		return nil, err
+	}
+	requestOptions := []check.RequestOption{
+		check.WithAgainstFiles(againstFiles),
+		check.WithOptions(options),
+		check.WithRuleIDs(r.RuleIDs...),
+	}
+
+	files, err := r.Files.ToFiles(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return check.NewRequest(files, requestOptions...)
 }
 
 // ProtoFileSpec specifies files to be compiled for testing.
@@ -124,10 +147,10 @@ type ProtoFileSpec struct {
 	FilePaths []string
 }
 
-// Compile compiles the files into check.Files.
+// ToFiles compiles the files into check.Files.
 //
 // If p is nil, this returns an empty slice.
-func (p *ProtoFileSpec) Compile(ctx context.Context) ([]check.File, error) {
+func (p *ProtoFileSpec) ToFiles(ctx context.Context) ([]check.File, error) {
 	if p == nil {
 		return nil, nil
 	}
