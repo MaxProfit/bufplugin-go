@@ -32,6 +32,12 @@ func TestMultiClientSimple(t *testing.T) {
 	testMultiClientSimple(t, false)
 }
 
+func TestMultiClientSimpleCacheRules(t *testing.T) {
+	t.Parallel()
+
+	testMultiClientSimple(t, true)
+}
+
 func testMultiClientSimple(t *testing.T, cacheRules bool) {
 	ctx := context.Background()
 
