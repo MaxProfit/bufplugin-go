@@ -45,6 +45,10 @@ type Rule interface {
 	// characters, start and end with a capital letter from A-Z, and only consist of capital
 	// letters from A-Z and underscores.
 	Categories() []string
+	// Whether or not the Rule is a default Rule.
+	//
+	// If a Rule is a default Rule, it will be called if a Request specifies no specific Rule IDs.
+	IsDefault() bool
 	// A user-displayable purpose of the rule.
 	//
 	// Always present.
@@ -78,6 +82,7 @@ type Rule interface {
 type rule struct {
 	id             string
 	categories     []string
+	isDefault      bool
 	purpose        string
 	ruleType       RuleType
 	deprecated     bool
@@ -87,6 +92,7 @@ type rule struct {
 func newRule(
 	id string,
 	categories []string,
+	isDefault bool,
 	purpose string,
 	ruleType RuleType,
 	deprecated bool,
@@ -95,6 +101,7 @@ func newRule(
 	return &rule{
 		id:             id,
 		categories:     categories,
+		isDefault:      isDefault,
 		purpose:        purpose,
 		ruleType:       ruleType,
 		deprecated:     deprecated,
@@ -108,6 +115,10 @@ func (r *rule) ID() string {
 
 func (r *rule) Categories() []string {
 	return slices.Clone(r.categories)
+}
+
+func (r *rule) IsDefault() bool {
+	return r.isDefault
 }
 
 func (r *rule) Purpose() string {
@@ -134,6 +145,7 @@ func (r *rule) toProto() *checkv1beta1.Rule {
 	return &checkv1beta1.Rule{
 		Id:             r.id,
 		Categories:     r.categories,
+		Default:        r.isDefault,
 		Purpose:        r.purpose,
 		Type:           protoRuleType,
 		Deprecated:     r.deprecated,
@@ -149,6 +161,7 @@ func ruleForProtoRule(protoRule *checkv1beta1.Rule) (Rule, error) {
 	return newRule(
 		protoRule.GetId(),
 		protoRule.GetCategories(),
+		protoRule.GetDefault(),
 		protoRule.GetPurpose(),
 		ruleType,
 		protoRule.GetDeprecated(),

@@ -73,7 +73,7 @@ func (c *checkServiceHandler) Check(
 			return nil, err
 		}
 	}
-	ruleSpecs := c.spec.Rules
+	ruleSpecs := xslices.Filter(c.spec.Rules, func(ruleSpec *RuleSpec) bool { return ruleSpec.IsDefault })
 	if ruleIDs := request.RuleIDs(); len(ruleIDs) > 0 {
 		ruleSpecs = make([]*RuleSpec, 0)
 		for _, ruleID := range ruleIDs {

@@ -41,7 +41,7 @@ type Request interface {
 	Options() Options
 	// RuleIDs returns the specific IDs the of Rules to use.
 	//
-	// If empty, all Rules will be used.
+	// If empty, all default Rules will be used.
 	// The returned RuleIDs will be sorted.
 	//
 	// This may return more than 250 IDs; the underlying Client implemention is required to do

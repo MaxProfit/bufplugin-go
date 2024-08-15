@@ -19,6 +19,34 @@ import (
 	"slices"
 )
 
+// Filter filters the slice to only the values where f returns true.
+func Filter[T any](s []T, f func(T) bool) []T {
+	sf := make([]T, 0, len(s))
+	for _, e := range s {
+		if f(e) {
+			sf = append(sf, e)
+		}
+	}
+	return sf
+}
+
+// FilterError filters the slice to only the values where f returns true.
+//
+// Returns error the first time f returns error.
+func FilterError[T any](s []T, f func(T) (bool, error)) ([]T, error) {
+	sf := make([]T, 0, len(s))
+	for _, e := range s {
+		ok, err := f(e)
+		if err != nil {
+			return nil, err
+		}
+		if ok {
+			sf = append(sf, e)
+		}
+	}
+	return sf, nil
+}
+
 // Map maps the slice.
 func Map[T1, T2 any](s []T1, f func(T1) T2) []T2 {
 	if s == nil {

@@ -36,10 +36,11 @@ const FieldLowerSnakeCaseRuleID = "FIELD_LOWER_SNAKE_CASE"
 var (
 	// FieldLowerSnakeCaseRuleSpec is the RuleSpec for the timestamp suffix Rule.
 	FieldLowerSnakeCaseRuleSpec = &check.RuleSpec{
-		ID:      FieldLowerSnakeCaseRuleID,
-		Purpose: "Checks that all field names are lower_snake_case.",
-		Type:    check.RuleTypeLint,
-		Handler: checkutil.NewFieldRuleHandler(checkFieldLowerSnakeCase),
+		ID:        FieldLowerSnakeCaseRuleID,
+		IsDefault: true,
+		Purpose:   "Checks that all field names are lower_snake_case.",
+		Type:      check.RuleTypeLint,
+		Handler:   checkutil.NewFieldRuleHandler(checkFieldLowerSnakeCase),
 	}
 
 	// Spec is the Spec for the timestamp suffix plugin.

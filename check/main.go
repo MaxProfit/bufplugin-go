@@ -27,10 +27,11 @@ import (
 //			&check.Spec {
 //				Rules: []*check.RuleSpec{
 //					{
-//						ID:      "TIMESTAMP_SUFFIX",
-//						Purpose: "Checks that all google.protobuf.Timestamps end in _time.",
-//						Type:    check.RuleTypeLint,
-//						Handler: check.RuleHandlerFunc(handleTimestampSuffix),
+//						ID:        "TIMESTAMP_SUFFIX",
+//						IsDefault: true,
+//						Purpose:   "Checks that all google.protobuf.Timestamps end in _time.",
+//						Type:      check.RuleTypeLint,
+//						Handler:   check.RuleHandlerFunc(handleTimestampSuffix),
 //					},
 //				},
 //			},

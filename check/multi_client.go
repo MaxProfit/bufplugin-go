@@ -55,8 +55,8 @@ func (c *multiClient) Check(ctx context.Context, request Request, _ ...CheckCall
 		// These are the specific ruleIDs that were requested.
 		requestRuleIDs := request.RuleIDs()
 		if len(requestRuleIDs) == 0 {
-			// If we didn't have specific ruleIDs, the requested ruleIDs are all ruleIDs.
-			requestRuleIDs = xslices.Map(allRules, Rule.ID)
+			// If we didn't have specific ruleIDs, the requested ruleIDs are all default ruleIDs.
+			requestRuleIDs = xslices.Map(xslices.Filter(allRules, Rule.IsDefault), Rule.ID)
 		}
 		// This is a map of the requested ruleIDs.
 		requestRuleIDMap := make(map[string]struct{})

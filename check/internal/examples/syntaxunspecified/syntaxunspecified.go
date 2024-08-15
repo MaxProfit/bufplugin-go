@@ -34,10 +34,11 @@ const SyntaxUnspecifiedRuleID = "SYNTAX_UNSPECIFIED"
 var (
 	// SyntaxUnspecifiedRuleSpec is the RuleSpec for the syntax unspecified Rule.
 	SyntaxUnspecifiedRuleSpec = &check.RuleSpec{
-		ID:      SyntaxUnspecifiedRuleID,
-		Purpose: "Checks that syntax is never specified.",
-		Type:    check.RuleTypeLint,
-		Handler: checkutil.NewFileRuleHandler(checkSyntaxUnspecified),
+		ID:        SyntaxUnspecifiedRuleID,
+		IsDefault: true,
+		Purpose:   "Checks that syntax is never specified.",
+		Type:      check.RuleTypeLint,
+		Handler:   checkutil.NewFileRuleHandler(checkSyntaxUnspecified),
 	}
 
 	// Spec is the Spec for the syntax unspecified plugin.

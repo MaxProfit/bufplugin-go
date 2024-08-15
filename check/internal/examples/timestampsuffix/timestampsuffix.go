@@ -33,10 +33,11 @@ const TimestampSuffixRuleID = "TIMESTAMP_SUFFIX"
 var (
 	// TimestampSuffixRuleSpec is the RuleSpec for the timestamp suffix Rule.
 	TimestampSuffixRuleSpec = &check.RuleSpec{
-		ID:      TimestampSuffixRuleID,
-		Purpose: "Checks that all google.protobuf.Timestamps end in _time.",
-		Type:    check.RuleTypeLint,
-		Handler: checkutil.NewFieldRuleHandler(checkTimestampSuffix),
+		ID:        TimestampSuffixRuleID,
+		IsDefault: true,
+		Purpose:   "Checks that all google.protobuf.Timestamps end in _time.",
+		Type:      check.RuleTypeLint,
+		Handler:   checkutil.NewFieldRuleHandler(checkTimestampSuffix),
 	}
 
 	// Spec is the Spec for the timestamp suffix plugin.

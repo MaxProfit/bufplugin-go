@@ -32,6 +32,7 @@ type RuleSpec struct {
 	// Required.
 	ID         string
 	Categories []string
+	IsDefault  bool
 	// Required.
 	Purpose string
 	// Required.
@@ -49,6 +50,7 @@ func ruleSpecToRule(ruleSpec *RuleSpec) Rule {
 	return newRule(
 		ruleSpec.ID,
 		ruleSpec.Categories,
+		ruleSpec.IsDefault,
 		ruleSpec.Purpose,
 		ruleSpec.Type,
 		ruleSpec.Deprecated,
