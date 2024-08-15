@@ -311,7 +311,15 @@ func getLocationForAddAnnotationOptions(
 	path protoreflect.SourcePath,
 ) (Location, error) {
 	if descriptor != nil {
-		return locationForDescriptor(descriptor), nil
+		// Technically, ParentFile() can be nil.
+		if fileDescriptor := descriptor.ParentFile(); fileDescriptor != nil {
+			file, ok := fileNameToFile[fileDescriptor.Path()]
+			if !ok {
+				return nil, fmt.Errorf("cannot add annotation for unknown file: %q", fileDescriptor.Path())
+			}
+			return locationForFileAndDescriptor(file, descriptor), nil
+		}
+		return nil, nil
 	}
 	if fileName != "" {
 		var sourceLocation protoreflect.SourceLocation
@@ -322,7 +330,7 @@ func getLocationForAddAnnotationOptions(
 		if len(path) > 0 {
 			sourceLocation = file.FileDescriptor().SourceLocations().ByPath(path)
 		}
-		return locationForFileNameAndSourceLocation(fileName, sourceLocation), nil
+		return locationForFileAndSourceLocation(file, sourceLocation), nil
 	}
 	return nil, nil
 }

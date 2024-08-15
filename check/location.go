@@ -26,12 +26,12 @@ import (
 //
 // A Location always has a file name.
 type Location interface {
-	// FileName returns the name of the File.
+	// File is the File associated with the Location.
 	//
 	// Always present.
-	//
-	// This matches the name field within the corresponding FileDescriptorProto.
-	FileName() string
+	File() File
+	// SourcePath returns the path within the FileDescriptorProto of the Location.
+	SourcePath() protoreflect.SourcePath
 
 	// StartLine returns the zero-indexed start line, if known.
 	StartLine() int
@@ -48,9 +48,6 @@ type Location interface {
 	// LeadingDetachedComments returns any leading detached comments, if known.
 	LeadingDetachedComments() []string
 
-	// SourcePath returns the path within the FileDescriptorProto of the location.
-	SourcePath() protoreflect.SourcePath
-
 	toProto() *checkv1beta1.Location
 
 	isLocation()
@@ -58,40 +55,41 @@ type Location interface {
 
 // *** PRIVATE ***
 
-func locationForDescriptor(descriptor protoreflect.Descriptor) Location {
-	if fileDescriptor := descriptor.ParentFile(); fileDescriptor != nil {
-		return newLocation(
-			fileDescriptor.Path(),
-			func() protoreflect.SourceLocation { return sourceLocationForDescriptor(descriptor) },
-		)
-	}
-	return nil
+func locationForFileAndDescriptor(file File, descriptor protoreflect.Descriptor) Location {
+	return newLocation(
+		file,
+		func() protoreflect.SourceLocation { return sourceLocationForDescriptor(descriptor) },
+	)
 }
 
-func locationForFileNameAndSourceLocation(fileName string, sourceLocation protoreflect.SourceLocation) Location {
+func locationForFileAndSourceLocation(file File, sourceLocation protoreflect.SourceLocation) Location {
 	return newLocation(
-		fileName,
+		file,
 		func() protoreflect.SourceLocation { return sourceLocation },
 	)
 }
 
 type location struct {
-	fileName          string
+	file              File
 	getSourceLocation func() protoreflect.SourceLocation
 }
 
 func newLocation(
-	fileName string,
+	file File,
 	getSourceLocation func() protoreflect.SourceLocation,
 ) *location {
 	return &location{
-		fileName:          fileName,
+		file:              file,
 		getSourceLocation: sync.OnceValue(getSourceLocation),
 	}
 }
 
-func (l *location) FileName() string {
-	return l.fileName
+func (l *location) File() File {
+	return l.file
+}
+
+func (l *location) SourcePath() protoreflect.SourcePath {
+	return slices.Clone(l.getSourceLocation().Path)
 }
 
 func (l *location) StartLine() int {
@@ -122,16 +120,12 @@ func (l *location) LeadingDetachedComments() []string {
 	return slices.Clone(l.getSourceLocation().LeadingDetachedComments)
 }
 
-func (l *location) SourcePath() protoreflect.SourcePath {
-	return slices.Clone(l.getSourceLocation().Path)
-}
-
 func (l *location) toProto() *checkv1beta1.Location {
 	if l == nil {
 		return nil
 	}
 	return &checkv1beta1.Location{
-		FileName:   l.FileName(),
+		FileName:   l.file.FileDescriptor().Path(),
 		SourcePath: l.getSourceLocation().Path,
 	}
 }
