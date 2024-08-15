@@ -36,7 +36,7 @@ func TestSimple(t *testing.T) {
 		Spec: Spec,
 		ExpectedAnnotations: []checktest.ExpectedAnnotation{
 			{
-				ID: TimestampSuffixRuleID,
+				RuleID: TimestampSuffixRuleID,
 				Location: &checktest.ExpectedLocation{
 					FileName:    "simple.proto",
 					StartLine:   8,

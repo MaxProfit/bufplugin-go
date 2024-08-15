@@ -162,10 +162,10 @@ func (p *ProtoFileSpec) ToFiles(ctx context.Context) ([]check.File, error) {
 
 // ExpectedAnnotation contains the values expected from an Annotation.
 type ExpectedAnnotation struct {
-	// ID is the ID of the Rule.
+	// RuleID is the ID of the Rule.
 	//
 	// Required.
-	ID string
+	RuleID string
 	// Location is the location of the failure.
 	Location *ExpectedLocation
 	// AgainstLocation is the against location of the failure.
@@ -194,7 +194,7 @@ func ExpectedAnnotationsForAnnotations(annotations []check.Annotation) []Expecte
 // ExpectedAnnotationForAnnotation returns an ExpectedAnnotation for the given Annotation.
 func ExpectedAnnotationForAnnotation(annotation check.Annotation) ExpectedAnnotation {
 	expectedAnnotation := ExpectedAnnotation{
-		ID: annotation.ID(),
+		RuleID: annotation.RuleID(),
 	}
 	if location := annotation.Location(); location != nil {
 		expectedAnnotation.Location = &ExpectedLocation{

@@ -47,7 +47,7 @@ func TestSimpleFailure(t *testing.T) {
 		Spec: Spec,
 		ExpectedAnnotations: []checktest.ExpectedAnnotation{
 			{
-				ID: SyntaxUnspecifiedRuleID,
+				RuleID: SyntaxUnspecifiedRuleID,
 				Location: &checktest.ExpectedLocation{
 					FileName: "simple.proto",
 				},

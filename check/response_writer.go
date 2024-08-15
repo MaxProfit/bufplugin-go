@@ -29,7 +29,7 @@ var errCannotReuseResponseWriter = errors.New("cannot reuse ResponseWriter")
 // A ResponseWriter is tied to a specific rule, and is passed to a RuleHandler.
 // The ID of the Rule will be automatically populated for any added Annotations.
 type ResponseWriter interface {
-	// AddAnnotation adds an Annotation with the ID that is tied to this ResponseWriter.
+	// AddAnnotation adds an Annotation with the rule ID that is tied to this ResponseWriter.
 	//
 	// Fields of the Annotation are controlled with AddAnnotationOptions, of which there are several:
 	//
@@ -179,7 +179,7 @@ func (m *multiResponseWriter) newResponseWriter(id string) *responseWriter {
 }
 
 func (m *multiResponseWriter) addAnnotation(
-	id string,
+	ruleID string,
 	options ...AddAnnotationOption,
 ) {
 	addAnnotationOptions := newAddAnnotationOptions()
@@ -221,7 +221,7 @@ func (m *multiResponseWriter) addAnnotation(
 		return
 	}
 	annotation, err := newAnnotation(
-		id,
+		ruleID,
 		addAnnotationOptions.message,
 		location,
 		againstLocation,

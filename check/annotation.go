@@ -27,11 +27,11 @@ import (
 // Annotations are created on the server-side via ResponseWriters, and returned
 // from Clients on Responses.
 type Annotation interface {
-	// ID is the ID of the Rule that failed.
+	// RuleID is the ID of the Rule that failed.
 	//
 	// This will always be present, have at least four characters, and only use
 	// characters from A-Z and underscores.
-	ID() string
+	RuleID() string
 	// Message is a user-readable message describing the failure.
 	//
 	// If present, this will be a complete sentence starting with a capital letter
@@ -52,29 +52,29 @@ type Annotation interface {
 // *** PRIVATE ***
 
 type annotation struct {
-	id              string
+	ruleID          string
 	message         string
 	location        Location
 	againstLocation Location
 }
 
 func newAnnotation(
-	id string,
+	ruleID string,
 	message string,
 	location Location,
 	againstLocation Location,
 ) (*annotation, error) {
 	// TODO: validation
 	return &annotation{
-		id:              id,
+		ruleID:          ruleID,
 		message:         message,
 		location:        location,
 		againstLocation: againstLocation,
 	}, nil
 }
 
-func (a *annotation) ID() string {
-	return a.id
+func (a *annotation) RuleID() string {
+	return a.ruleID
 }
 
 func (a *annotation) Message() string {
@@ -102,7 +102,7 @@ func (a *annotation) toProto() *checkv1beta1.Annotation {
 		protoAgainstLocation = a.againstLocation.toProto()
 	}
 	return &checkv1beta1.Annotation{
-		Id:              a.ID(),
+		RuleId:          a.RuleID(),
 		Message:         a.Message(),
 		Location:        protoLocation,
 		AgainstLocation: protoAgainstLocation,

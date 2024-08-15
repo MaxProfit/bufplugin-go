@@ -121,7 +121,7 @@ func (c *client) Check(ctx context.Context, request Request, _ ...CheckCallOptio
 		}
 		for _, protoAnnotation := range protoResponse.GetAnnotations() {
 			multiResponseWriter.addAnnotation(
-				protoAnnotation.GetId(),
+				protoAnnotation.GetRuleId(),
 				WithMessage(protoAnnotation.GetMessage()),
 				WithFileName(protoAnnotation.GetLocation().GetFileName()),
 				WithSourcePath(protoAnnotation.GetLocation().GetSourcePath()),

@@ -81,7 +81,7 @@ func testMultiClientSimple(t *testing.T, cacheRules bool) {
 		t,
 		[]checktest.ExpectedAnnotation{
 			{
-				ID: fieldlowersnakecase.FieldLowerSnakeCaseRuleID,
+				RuleID: fieldlowersnakecase.FieldLowerSnakeCaseRuleID,
 				Location: &checktest.ExpectedLocation{
 					FileName:    "simple.proto",
 					StartLine:   10,
@@ -91,7 +91,7 @@ func testMultiClientSimple(t *testing.T, cacheRules bool) {
 				},
 			},
 			{
-				ID: timestampsuffix.TimestampSuffixRuleID,
+				RuleID: timestampsuffix.TimestampSuffixRuleID,
 				Location: &checktest.ExpectedLocation{
 					FileName:    "simple.proto",
 					StartLine:   9,
