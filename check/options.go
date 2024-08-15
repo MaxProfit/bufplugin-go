@@ -41,21 +41,25 @@ var emptyOptions = newOptionsNoValidate(nil)
 // another suffix such as "Service". This would result in the behavior of the check changing,
 // as well as result in the Purpose string potentially changing to specify that the
 // expected suffix is "Service" instead of "API".
+//
+// It is not possible to set an option with an empty value. If you want to specify
+// set or not set, use a sentinel value such as "true" or "1". Get will always return nil
+// if the value is empty. There is no semantic difference between nil and empty.
+//
+// The value is a []byte to allow plugins to encode whatever information they wish, however
+// plugin authors are responsible for parsing. For example, users may want to specify a number,
+// in which case the plugin would be responsible for parsing this number.
 type Options interface {
 	// Get gets the option value for the given key.
-	//
-	// It is not possible to set an option with an empty value. If you want to specify
-	// set or not set, use a sentinel value such as "true" or "1". Get will always return nil
-	// if the value is empty. There is no semantic difference between nil and empty.
-	//
-	// The value is a []byte to allow plugins to encode whatever information they wish, however
-	// plugin authors are responsible for parsing. For example, users may want to specify a number,
-	// in which case the plugin would be responsible for parsing this number.
 	//
 	// The key must have at least four characters.
 	// The key must start and end with a lowercase letter from a-z, and only consist
 	// of lowercase letters from a-z and underscores.
 	Get(key string) []byte
+	// Range ranges over all key/value pairs.
+	//
+	// The range order is not deterministic.
+	Range(f func(key string, value []byte))
 
 	toProto() []*checkv1beta1.Option
 
@@ -101,6 +105,12 @@ func (o *options) Get(key string) []byte {
 		return slices.Clone(value)
 	}
 	return nil
+}
+
+func (o *options) Range(f func(key string, value []byte)) {
+	for key, value := range o.keyToValue {
+		f(key, value)
+	}
 }
 
 func (o *options) toProto() []*checkv1beta1.Option {

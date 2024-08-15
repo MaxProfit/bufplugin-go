@@ -72,6 +72,9 @@ type File interface {
 
 // FilesForProtoFiles returns a new slice of Files for the given checkv1beta1.Files.
 func FilesForProtoFiles(protoFiles []*checkv1beta1.File) ([]File, error) {
+	if len(protoFiles) == 0 {
+		return nil, nil
+	}
 	fileNameToProtoFile := make(map[string]*checkv1beta1.File, len(protoFiles))
 	fileDescriptorProtos := make([]*descriptorpb.FileDescriptorProto, len(protoFiles))
 	for i, protoFile := range protoFiles {

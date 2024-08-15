@@ -4,6 +4,8 @@ buf.build/gen/go/bufbuild/bufplugin/protocolbuffers/go v1.34.2-20240815031521-0e
 buf.build/gen/go/bufbuild/bufplugin/protocolbuffers/go v1.34.2-20240815031521-0eecf1738efc.2/go.mod h1:aJVaPevAavNh6YqOiwzXynBPrpgQPyxWjIZSkmPBcbU=
 buf.build/gen/go/bufbuild/bufplugin/protocolbuffers/go v1.34.2-20240815163817-276226ba7390.2 h1:AJdFZyFhDKmjKyFWhLCFYlI9KaZvE72T1OuNoOsuH6g=
 buf.build/gen/go/bufbuild/bufplugin/protocolbuffers/go v1.34.2-20240815163817-276226ba7390.2/go.mod h1:aJVaPevAavNh6YqOiwzXynBPrpgQPyxWjIZSkmPBcbU=
+buf.build/gen/go/bufbuild/bufplugin/protocolbuffers/go v1.34.2-20240815225347-ce7aba4a3538.2 h1:LZ3pVlJjfTlOanVwD8+q440rhxgWAJiPhUemBLCAcos=
+buf.build/gen/go/bufbuild/bufplugin/protocolbuffers/go v1.34.2-20240815225347-ce7aba4a3538.2/go.mod h1:aJVaPevAavNh6YqOiwzXynBPrpgQPyxWjIZSkmPBcbU=
 buf.build/gen/go/bufbuild/pluginrpc/protocolbuffers/go v1.34.2-20240806221033-67986767b04f.2 h1:aLIjJAj66W9lSC/kFxSnTGfa8Ou9f9LkU5k4Hsmcyao=
 buf.build/gen/go/bufbuild/pluginrpc/protocolbuffers/go v1.34.2-20240806221033-67986767b04f.2/go.mod h1:nxutvSY3xC8YHLZByE3Z91Is7lUYhAnLLe8aI/gBBYA=
 buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.34.2-20240717164558-a6c49f84cc0f.2 h1:SZRVx928rbYZ6hEKUIN+vtGDkl7uotABRWGY4OAg5gM=
