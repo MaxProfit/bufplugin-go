@@ -93,6 +93,126 @@ func OptionsForProtoOptions(protoOptions []*checkv1beta1.Option) (Options, error
 	return NewOptions(keyToValue)
 }
 
+// GetBoolValue gets a bool value from the Options.
+//
+// If the value is present and is not of type bool, an error is returned.
+func GetBoolValue(options Options, key string) (bool, error) {
+	anyValue, ok := options.Get(key)
+	if !ok {
+		return false, nil
+	}
+	value, ok := anyValue.(bool)
+	if !ok {
+		return false, newUnexpectedOptionValueError(key, false, anyValue)
+	}
+	return value, nil
+}
+
+// GetInt64Value gets a int64 value from the Options.
+//
+// If the value is present and is not of type int64, an error is returned.
+func GetInt64Value(options Options, key string) (int64, error) {
+	anyValue, ok := options.Get(key)
+	if !ok {
+		return 0, nil
+	}
+	value, ok := anyValue.(int64)
+	if !ok {
+		return 0, newUnexpectedOptionValueError(key, int64(0), anyValue)
+	}
+	return value, nil
+}
+
+// GetFloat64Value gets a float64 value from the Options.
+//
+// If the value is present and is not of type float64, an error is returned.
+func GetFloat64Value(options Options, key string) (float64, error) {
+	anyValue, ok := options.Get(key)
+	if !ok {
+		return 0.0, nil
+	}
+	value, ok := anyValue.(float64)
+	if !ok {
+		return 0.0, newUnexpectedOptionValueError(key, float64(0.0), anyValue)
+	}
+	return value, nil
+}
+
+// GetStringValue gets a string value from the Options.
+//
+// If the value is present and is not of type string, an error is returned.
+func GetStringValue(options Options, key string) (string, error) {
+	anyValue, ok := options.Get(key)
+	if !ok {
+		return "", nil
+	}
+	value, ok := anyValue.(string)
+	if !ok {
+		return "", newUnexpectedOptionValueError(key, "", anyValue)
+	}
+	return value, nil
+}
+
+// GetBytesValue gets a bytes value from the Options.
+//
+// If the value is present and is not of type bytes, an error is returned.
+func GetBytesValue(options Options, key string) ([]byte, error) {
+	anyValue, ok := options.Get(key)
+	if !ok {
+		return nil, nil
+	}
+	value, ok := anyValue.([]byte)
+	if !ok {
+		return nil, newUnexpectedOptionValueError(key, []byte{}, anyValue)
+	}
+	return value, nil
+}
+
+// GetInt64SliceValue gets a []int64 value from the Options.
+//
+// If the value is present and is not of type []int64, an error is returned.
+func GetInt64SliceValue(options Options, key string) ([]int64, error) {
+	anyValue, ok := options.Get(key)
+	if !ok {
+		return nil, nil
+	}
+	value, ok := anyValue.([]int64)
+	if !ok {
+		return nil, newUnexpectedOptionValueError(key, []int64{}, anyValue)
+	}
+	return value, nil
+}
+
+// GetFloat64SliceValue gets a []float64 value from the Options.
+//
+// If the value is present and is not of type []float64, an error is returned.
+func GetFloat64SliceValue(options Options, key string) ([]float64, error) {
+	anyValue, ok := options.Get(key)
+	if !ok {
+		return nil, nil
+	}
+	value, ok := anyValue.([]float64)
+	if !ok {
+		return nil, newUnexpectedOptionValueError(key, []float64{}, anyValue)
+	}
+	return value, nil
+}
+
+// GetStringSliceValue gets a []string value from the Options.
+//
+// If the value is present and is not of type []string, an error is returned.
+func GetStringSliceValue(options Options, key string) ([]string, error) {
+	anyValue, ok := options.Get(key)
+	if !ok {
+		return nil, nil
+	}
+	value, ok := anyValue.([]string)
+	if !ok {
+		return nil, newUnexpectedOptionValueError(key, []string{}, anyValue)
+	}
+	return value, nil
+}
+
 // *** PRIVATE ***
 
 type options struct {
