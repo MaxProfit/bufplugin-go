@@ -16,6 +16,7 @@ package check
 
 import (
 	"slices"
+	"strings"
 
 	checkv1beta1 "buf.build/gen/go/bufbuild/bufplugin/protocolbuffers/go/buf/plugin/check/v1beta1"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -47,6 +48,8 @@ type Location interface {
 	// LeadingDetachedComments returns any leading detached comments, if known.
 	LeadingDetachedComments() []string
 
+	unclonedSourcePath() protoreflect.SourcePath
+	unclonedLeadingDetachedComments() []string
 	toProto() *checkv1beta1.Location
 
 	isLocation()
@@ -113,6 +116,14 @@ func (l *location) LeadingDetachedComments() []string {
 	return slices.Clone(l.sourceLocation.LeadingDetachedComments)
 }
 
+func (l *location) unclonedSourcePath() protoreflect.SourcePath {
+	return l.sourceLocation.Path
+}
+
+func (l *location) unclonedLeadingDetachedComments() []string {
+	return l.sourceLocation.LeadingDetachedComments
+}
+
 func (l *location) toProto() *checkv1beta1.Location {
 	if l == nil {
 		return nil
@@ -133,4 +144,22 @@ func sourceLocationForDescriptor(descriptor protoreflect.Descriptor) protoreflec
 		return fileDescriptor.SourceLocations().ByDescriptor(descriptor)
 	}
 	return protoreflect.SourceLocation{}
+}
+
+func compareLocations(one Location, two Location) int {
+	if one == nil && two == nil {
+		return 0
+	}
+	return joinCompares(
+		nilCompare(one, two),
+		strings.Compare(one.File().FileDescriptor().Path(), two.File().FileDescriptor().Path()),
+		intCompare(one.StartLine(), two.StartLine()),
+		intCompare(one.StartColumn(), two.StartColumn()),
+		intCompare(one.EndLine(), two.EndLine()),
+		intCompare(one.EndColumn(), two.EndColumn()),
+		slices.Compare(one.unclonedSourcePath(), two.unclonedSourcePath()),
+		strings.Compare(one.LeadingComments(), two.LeadingComments()),
+		strings.Compare(one.TrailingComments(), two.TrailingComments()),
+		slices.Compare(one.unclonedLeadingDetachedComments(), two.unclonedLeadingDetachedComments()),
+	)
 }

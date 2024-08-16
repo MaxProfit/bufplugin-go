@@ -15,6 +15,8 @@
 package check
 
 import (
+	"strings"
+
 	checkv1beta1 "buf.build/gen/go/bufbuild/bufplugin/protocolbuffers/go/buf/plugin/check/v1beta1"
 )
 
@@ -110,3 +112,16 @@ func (a *annotation) toProto() *checkv1beta1.Annotation {
 }
 
 func (*annotation) isAnnotation() {}
+
+func compareAnnotations(one Annotation, two Annotation) int {
+	if one == nil && two == nil {
+		return 0
+	}
+	return joinCompares(
+		nilCompare(one, two),
+		strings.Compare(one.RuleID(), two.RuleID()),
+		compareLocations(one.Location(), two.Location()),
+		compareLocations(one.AgainstLocation(), two.AgainstLocation()),
+		strings.Compare(one.Message(), two.Message()),
+	)
+}
