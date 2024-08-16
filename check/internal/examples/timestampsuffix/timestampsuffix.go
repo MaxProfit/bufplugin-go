@@ -23,6 +23,7 @@ package timestampsuffix
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/bufbuild/bufplugin-go/check"
@@ -65,7 +66,11 @@ func checkTimestampSuffix(
 	fieldDescriptor protoreflect.FieldDescriptor,
 ) error {
 	timestampSuffix := defaultTimestampSuffix
-	if timestampSuffixOptionValue, ok := request.Options().Get(TimestampSuffixOptionKey).(string); ok {
+	if timestampSuffixOptionAnyValue, ok := request.Options().Get(TimestampSuffixOptionKey); ok {
+		timestampSuffixOptionValue, ok := timestampSuffixOptionAnyValue.(string)
+		if !ok {
+			return fmt.Errorf("expected string for option %q, got %T", TimestampSuffixOptionKey, timestampSuffixOptionAnyValue)
+		}
 		if timestampSuffixOptionValue != "" {
 			timestampSuffix = timestampSuffixOptionValue
 		}

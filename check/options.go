@@ -61,7 +61,7 @@ type Options interface {
 	// The key must have at least four characters.
 	// The key must start and end with a lowercase letter from a-z, and only consist
 	// of lowercase letters from a-z and underscores.
-	Get(key string) any
+	Get(key string) (any, bool)
 	// Range ranges over all key/value pairs.
 	//
 	// The range order is not deterministic.
@@ -108,8 +108,9 @@ func newOptionsNoValidate(keyToValue map[string]any) *options {
 	}
 }
 
-func (o *options) Get(key string) any {
-	return o.keyToValue[key]
+func (o *options) Get(key string) (any, bool) {
+	value, ok := o.keyToValue[key]
+	return value, ok
 }
 
 func (o *options) Range(f func(key string, value any)) {
