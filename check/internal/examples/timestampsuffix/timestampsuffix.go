@@ -13,7 +13,10 @@
 // limitations under the License.
 
 // Package timestampsuffix implements a simple plugin that checks that all
-// google.protobuf.Timestamp fields end in "_time".
+// google.protobuf.Timestamp fields end in a specific suffix".
+//
+// The default suffix is "_time", but this can be overridden with the
+// "timestamp_suffix" option key.
 //
 // See cmd/buf-plugin-timestamp-suffix for the plugin main.
 package timestampsuffix
@@ -27,15 +30,22 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
-// TimestampSuffixRuleID is the Rule ID of the timestamp suffix Rule.
-const TimestampSuffixRuleID = "TIMESTAMP_SUFFIX"
+const (
+	// TimestampSuffixRuleID is the Rule ID of the timestamp suffix Rule.
+	TimestampSuffixRuleID = "TIMESTAMP_SUFFIX"
+
+	// TimestampSuffixOptionKey is the option key to override the default timestamp suffix.
+	TimestampSuffixOptionKey = "timestamp_suffix"
+
+	defaultTimestampSuffix = "_time"
+)
 
 var (
 	// TimestampSuffixRuleSpec is the RuleSpec for the timestamp suffix Rule.
 	TimestampSuffixRuleSpec = &check.RuleSpec{
 		ID:        TimestampSuffixRuleID,
 		IsDefault: true,
-		Purpose:   "Checks that all google.protobuf.Timestamps end in _time.",
+		Purpose:   `Checks that all google.protobuf.Timestamps end in a specific suffix (default is "_time").`,
 		Type:      check.RuleTypeLint,
 		Handler:   checkutil.NewFieldRuleHandler(checkTimestampSuffix),
 	}
@@ -51,9 +61,16 @@ var (
 func checkTimestampSuffix(
 	_ context.Context,
 	responseWriter check.ResponseWriter,
-	_ check.Request,
+	request check.Request,
 	fieldDescriptor protoreflect.FieldDescriptor,
 ) error {
+	timestampSuffix := defaultTimestampSuffix
+	if timestampSuffixOptionValue, ok := request.Options().Get(TimestampSuffixOptionKey).(string); ok {
+		if timestampSuffixOptionValue != "" {
+			timestampSuffix = timestampSuffixOptionValue
+		}
+	}
+
 	fieldDescriptorType := fieldDescriptor.Message()
 	if fieldDescriptorType == nil {
 		return nil
@@ -61,9 +78,9 @@ func checkTimestampSuffix(
 	if string(fieldDescriptorType.FullName()) != "google.protobuf.Timestamp" {
 		return nil
 	}
-	if !strings.HasSuffix(string(fieldDescriptor.Name()), "_time") {
+	if !strings.HasSuffix(string(fieldDescriptor.Name()), timestampSuffix) {
 		responseWriter.AddAnnotation(
-			check.WithMessagef("Fields of type google.protobuf.Timestamp must end in _time but field name was %q.", string(fieldDescriptor.Name())),
+			check.WithMessagef("Fields of type google.protobuf.Timestamp must end in %q but field name was %q.", timestampSuffix, string(fieldDescriptor.Name())),
 			check.WithDescriptor(fieldDescriptor),
 		)
 	}

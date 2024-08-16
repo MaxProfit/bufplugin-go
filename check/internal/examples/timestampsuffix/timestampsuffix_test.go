@@ -48,3 +48,32 @@ func TestSimple(t *testing.T) {
 		},
 	}.Run(t)
 }
+
+func TestOption(t *testing.T) {
+	t.Parallel()
+
+	checktest.TestCase{
+		Request: &checktest.RequestSpec{
+			Files: &checktest.ProtoFileSpec{
+				DirPaths:  []string{"testdata/option"},
+				FilePaths: []string{"option.proto"},
+			},
+			Options: map[string]any{
+				TimestampSuffixOptionKey: "_timestamp",
+			},
+		},
+		Spec: Spec,
+		ExpectedAnnotations: []checktest.ExpectedAnnotation{
+			{
+				RuleID: TimestampSuffixRuleID,
+				Location: &checktest.ExpectedLocation{
+					FileName:    "option.proto",
+					StartLine:   8,
+					StartColumn: 2,
+					EndLine:     8,
+					EndColumn:   45,
+				},
+			},
+		},
+	}.Run(t)
+}
