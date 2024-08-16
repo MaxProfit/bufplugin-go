@@ -114,7 +114,11 @@ func (c *client) Check(ctx context.Context, request Request, _ ...CheckCallOptio
 	if err != nil {
 		return nil, err
 	}
-	for _, protoRequest := range request.toProtos() {
+	protoRequests, err := request.toProtos()
+	if err != nil {
+		return nil, err
+	}
+	for _, protoRequest := range protoRequests {
 		protoResponse, err := checkServiceClient.Check(ctx, protoRequest)
 		if err != nil {
 			return nil, err

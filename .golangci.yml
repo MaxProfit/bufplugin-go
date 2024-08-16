@@ -36,6 +36,7 @@ linters:
     - lll               # don't want hard limits for line length
     - maintidx          # covered by gocyclo
     - nlreturn          # generous whitespace violates house style
+    - testifylint       # does not want us to use assert
     - testpackage       # internal tests are fine
     - thelper           # we want to print out the whole stack
     - wrapcheck         # don't _always_ need to wrap errors
@@ -47,6 +48,10 @@ issues:
         - revive
       path: check/client.go
       test: "CheckCallOption"
+    - linters:
+        - exhaustive
+      path: check/options.go
+      text: "reflect.Pointer|reflect.Ptr"
     - linters:
         - gocritic
       path: check/file.go

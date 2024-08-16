@@ -55,7 +55,7 @@ type Request interface {
 	//
 	// If there are more than 250 Rule IDs, multiple CheckRequests will be produced by chunking up
 	// the Rule IDs.
-	toProtos() []*checkv1beta1.CheckRequest
+	toProtos() ([]*checkv1beta1.CheckRequest, error)
 
 	isRequest()
 }
@@ -169,13 +169,16 @@ func (r *request) RuleIDs() []string {
 	return slices.Clone(r.ruleIDs)
 }
 
-func (r *request) toProtos() []*checkv1beta1.CheckRequest {
+func (r *request) toProtos() ([]*checkv1beta1.CheckRequest, error) {
 	if r == nil {
-		return nil
+		return nil, nil
 	}
 	protoFiles := xslices.Map(r.files, File.toProto)
 	protoAgainstFiles := xslices.Map(r.againstFiles, File.toProto)
-	protoOptions := r.options.toProto()
+	protoOptions, err := r.options.toProto()
+	if err != nil {
+		return nil, err
+	}
 	if len(r.ruleIDs) == 0 {
 		return []*checkv1beta1.CheckRequest{
 			{
@@ -183,7 +186,7 @@ func (r *request) toProtos() []*checkv1beta1.CheckRequest {
 				AgainstFiles: protoAgainstFiles,
 				Options:      protoOptions,
 			},
-		}
+		}, nil
 	}
 	var checkRequests []*checkv1beta1.CheckRequest
 	for i := 0; i < len(r.ruleIDs); i += checkRuleIDPageSize {
@@ -202,7 +205,7 @@ func (r *request) toProtos() []*checkv1beta1.CheckRequest {
 			},
 		)
 	}
-	return checkRequests
+	return checkRequests, nil
 }
 
 func (*request) isRequest() {}

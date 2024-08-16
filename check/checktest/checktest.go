@@ -88,7 +88,7 @@ type RequestSpec struct {
 	// RuleIDs are the specific RuleIDs to run.
 	RuleIDs []string
 	// Options are any options to pass to the plugin.
-	Options map[string][]byte
+	Options map[string]any
 }
 
 // ToRequest converts the spec into a check.Request.
