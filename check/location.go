@@ -55,6 +55,25 @@ type Location interface {
 	isLocation()
 }
 
+// CompareLocations returns -1 if one < two, 1 if one > two, 0 otherwise.
+func CompareLocations(one Location, two Location) int {
+	if one == nil && two == nil {
+		return 0
+	}
+	return joinCompares(
+		nilCompare(one, two),
+		strings.Compare(one.File().FileDescriptor().Path(), two.File().FileDescriptor().Path()),
+		intCompare(one.StartLine(), two.StartLine()),
+		intCompare(one.StartColumn(), two.StartColumn()),
+		intCompare(one.EndLine(), two.EndLine()),
+		intCompare(one.EndColumn(), two.EndColumn()),
+		slices.Compare(one.unclonedSourcePath(), two.unclonedSourcePath()),
+		strings.Compare(one.LeadingComments(), two.LeadingComments()),
+		strings.Compare(one.TrailingComments(), two.TrailingComments()),
+		slices.Compare(one.unclonedLeadingDetachedComments(), two.unclonedLeadingDetachedComments()),
+	)
+}
+
 // *** PRIVATE ***
 
 func locationForFileAndDescriptor(file File, descriptor protoreflect.Descriptor) Location {
@@ -144,22 +163,4 @@ func sourceLocationForDescriptor(descriptor protoreflect.Descriptor) protoreflec
 		return fileDescriptor.SourceLocations().ByDescriptor(descriptor)
 	}
 	return protoreflect.SourceLocation{}
-}
-
-func compareLocations(one Location, two Location) int {
-	if one == nil && two == nil {
-		return 0
-	}
-	return joinCompares(
-		nilCompare(one, two),
-		strings.Compare(one.File().FileDescriptor().Path(), two.File().FileDescriptor().Path()),
-		intCompare(one.StartLine(), two.StartLine()),
-		intCompare(one.StartColumn(), two.StartColumn()),
-		intCompare(one.EndLine(), two.EndLine()),
-		intCompare(one.EndColumn(), two.EndColumn()),
-		slices.Compare(one.unclonedSourcePath(), two.unclonedSourcePath()),
-		strings.Compare(one.LeadingComments(), two.LeadingComments()),
-		strings.Compare(one.TrailingComments(), two.TrailingComments()),
-		slices.Compare(one.unclonedLeadingDetachedComments(), two.unclonedLeadingDetachedComments()),
-	)
 }

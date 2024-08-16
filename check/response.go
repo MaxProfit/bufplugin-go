@@ -16,7 +16,6 @@ package check
 
 import (
 	"slices"
-	"sort"
 
 	checkv1beta1 "buf.build/gen/go/bufbuild/bufplugin/protocolbuffers/go/buf/plugin/check/v1beta1"
 	"github.com/bufbuild/bufplugin-go/internal/pkg/xslices"
@@ -41,12 +40,7 @@ type response struct {
 }
 
 func newResponse(annotations []Annotation) (*response, error) {
-	sort.Slice(
-		annotations,
-		func(i int, j int) bool {
-			return compareAnnotations(annotations[i], annotations[j]) < 0
-		},
-	)
+	sortAnnotations(annotations)
 	// TODO: validation? Leaving error for now
 	return &response{
 		annotations: annotations,

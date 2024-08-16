@@ -15,6 +15,7 @@
 package check
 
 import (
+	"sort"
 	"strings"
 
 	checkv1beta1 "buf.build/gen/go/bufbuild/bufplugin/protocolbuffers/go/buf/plugin/check/v1beta1"
@@ -49,6 +50,20 @@ type Annotation interface {
 	toProto() *checkv1beta1.Annotation
 
 	isAnnotation()
+}
+
+// CompareAnnotations returns -1 if one < two, 1 if one > two, 0 otherwise.
+func CompareAnnotations(one Annotation, two Annotation) int {
+	if one == nil && two == nil {
+		return 0
+	}
+	return joinCompares(
+		nilCompare(one, two),
+		strings.Compare(one.RuleID(), two.RuleID()),
+		CompareLocations(one.Location(), two.Location()),
+		CompareLocations(one.AgainstLocation(), two.AgainstLocation()),
+		strings.Compare(one.Message(), two.Message()),
+	)
 }
 
 // *** PRIVATE ***
@@ -113,15 +128,11 @@ func (a *annotation) toProto() *checkv1beta1.Annotation {
 
 func (*annotation) isAnnotation() {}
 
-func compareAnnotations(one Annotation, two Annotation) int {
-	if one == nil && two == nil {
-		return 0
-	}
-	return joinCompares(
-		nilCompare(one, two),
-		strings.Compare(one.RuleID(), two.RuleID()),
-		compareLocations(one.Location(), two.Location()),
-		compareLocations(one.AgainstLocation(), two.AgainstLocation()),
-		strings.Compare(one.Message(), two.Message()),
+func sortAnnotations(annotations []Annotation) {
+	sort.Slice(
+		annotations,
+		func(i int, j int) bool {
+			return CompareAnnotations(annotations[i], annotations[j]) < 0
+		},
 	)
 }
