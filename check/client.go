@@ -63,7 +63,8 @@ func ClientWithCacheRules() ClientOption {
 //
 // This should primarily be used for testing.
 func NewClientForSpec(spec *Spec, options ...ClientOption) (Client, error) {
-	checkServiceHandler, err := newCheckServiceHandler(spec)
+	//  TODO: Expose parallelism as an option.
+	checkServiceHandler, err := newCheckServiceHandler(spec, 0)
 	if err != nil {
 		return nil, err
 	}

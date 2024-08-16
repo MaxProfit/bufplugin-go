@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	checkv1beta1 "buf.build/gen/go/bufbuild/bufplugin/protocolbuffers/go/buf/plugin/check/v1beta1"
+	"github.com/bufbuild/bufplugin-go/internal/pkg/thread"
 	"github.com/bufbuild/bufplugin-go/internal/pkg/xslices"
 	"github.com/bufbuild/pluginrpc-go"
 	"github.com/bufbuild/protovalidate-go"
@@ -30,11 +31,12 @@ const defaultPageSize = 250
 
 type checkServiceHandler struct {
 	spec             *Spec
+	parallelism      int
 	ruleIDToRuleSpec map[string]*RuleSpec
 	ruleIDToIndex    map[string]int
 }
 
-func newCheckServiceHandler(spec *Spec) (*checkServiceHandler, error) {
+func newCheckServiceHandler(spec *Spec, parallelism int) (*checkServiceHandler, error) {
 	validator, err := protovalidate.New()
 	if err != nil {
 		return nil, err
@@ -54,6 +56,7 @@ func newCheckServiceHandler(spec *Spec) (*checkServiceHandler, error) {
 	}
 	return &checkServiceHandler{
 		spec:             spec,
+		parallelism:      parallelism,
 		ruleIDToRuleSpec: ruleIDToRuleSpec,
 		ruleIDToIndex:    ruleIDToIndex,
 	}, nil
@@ -88,14 +91,23 @@ func (c *checkServiceHandler) Check(
 	if err != nil {
 		return nil, err
 	}
-	for _, ruleSpec := range ruleSpecs {
-		if err := ruleSpec.Handler.Handle(
-			ctx,
-			multiResponseWriter.newResponseWriter(ruleSpec.ID),
-			request,
-		); err != nil {
-			return nil, err
-		}
+	if err := thread.Parallelize(
+		ctx,
+		xslices.Map(
+			ruleSpecs,
+			func(ruleSpec *RuleSpec) func(context.Context) error {
+				return func(ctx context.Context) error {
+					return ruleSpec.Handler.Handle(
+						ctx,
+						multiResponseWriter.newResponseWriter(ruleSpec.ID),
+						request,
+					)
+				}
+			},
+		),
+		thread.WithParallelism(c.parallelism),
+	); err != nil {
+		return nil, err
 	}
 	response, err := multiResponseWriter.toResponse()
 	if err != nil {

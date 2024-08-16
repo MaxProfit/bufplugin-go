@@ -40,7 +40,7 @@ import (
 func Main(spec *Spec, _ ...MainOption) {
 	pluginrpc.Main(
 		func() (pluginrpc.Server, error) {
-			checkServiceHandler, err := newCheckServiceHandler(spec)
+			checkServiceHandler, err := newCheckServiceHandler(spec, 0)
 			if err != nil {
 				return nil, err
 			}
