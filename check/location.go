@@ -16,7 +16,6 @@ package check
 
 import (
 	"slices"
-	"sync"
 
 	checkv1beta1 "buf.build/gen/go/bufbuild/bufplugin/protocolbuffers/go/buf/plugin/check/v1beta1"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -56,31 +55,25 @@ type Location interface {
 // *** PRIVATE ***
 
 func locationForFileAndDescriptor(file File, descriptor protoreflect.Descriptor) Location {
-	return newLocation(
-		file,
-		func() protoreflect.SourceLocation { return sourceLocationForDescriptor(descriptor) },
-	)
+	return newLocation(file, sourceLocationForDescriptor(descriptor))
 }
 
 func locationForFileAndSourceLocation(file File, sourceLocation protoreflect.SourceLocation) Location {
-	return newLocation(
-		file,
-		func() protoreflect.SourceLocation { return sourceLocation },
-	)
+	return newLocation(file, sourceLocation)
 }
 
 type location struct {
-	file              File
-	getSourceLocation func() protoreflect.SourceLocation
+	file           File
+	sourceLocation protoreflect.SourceLocation
 }
 
 func newLocation(
 	file File,
-	getSourceLocation func() protoreflect.SourceLocation,
+	sourceLocation protoreflect.SourceLocation,
 ) *location {
 	return &location{
-		file:              file,
-		getSourceLocation: sync.OnceValue(getSourceLocation),
+		file:           file,
+		sourceLocation: sourceLocation,
 	}
 }
 
@@ -89,35 +82,35 @@ func (l *location) File() File {
 }
 
 func (l *location) SourcePath() protoreflect.SourcePath {
-	return slices.Clone(l.getSourceLocation().Path)
+	return slices.Clone(l.sourceLocation.Path)
 }
 
 func (l *location) StartLine() int {
-	return l.getSourceLocation().StartLine
+	return l.sourceLocation.StartLine
 }
 
 func (l *location) StartColumn() int {
-	return l.getSourceLocation().StartColumn
+	return l.sourceLocation.StartColumn
 }
 
 func (l *location) EndLine() int {
-	return l.getSourceLocation().EndLine
+	return l.sourceLocation.EndLine
 }
 
 func (l *location) EndColumn() int {
-	return l.getSourceLocation().EndColumn
+	return l.sourceLocation.EndColumn
 }
 
 func (l *location) LeadingComments() string {
-	return l.getSourceLocation().LeadingComments
+	return l.sourceLocation.LeadingComments
 }
 
 func (l *location) TrailingComments() string {
-	return l.getSourceLocation().TrailingComments
+	return l.sourceLocation.TrailingComments
 }
 
 func (l *location) LeadingDetachedComments() []string {
-	return slices.Clone(l.getSourceLocation().LeadingDetachedComments)
+	return slices.Clone(l.sourceLocation.LeadingDetachedComments)
 }
 
 func (l *location) toProto() *checkv1beta1.Location {
@@ -126,7 +119,7 @@ func (l *location) toProto() *checkv1beta1.Location {
 	}
 	return &checkv1beta1.Location{
 		FileName:   l.file.FileDescriptor().Path(),
-		SourcePath: l.getSourceLocation().Path,
+		SourcePath: l.sourceLocation.Path,
 	}
 }
 
