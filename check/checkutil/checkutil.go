@@ -14,10 +14,8 @@
 
 // Package checkutil implements helpers for the check package.
 //
-// This may eventually be made external to help others write plugins. For now, this
-// is in early development and we do not want to commit to the API whatsoever.
-// This only currently covers methods we need for examples and testing. If we
-// expose this further, it will be more complete.
+// This is a work in progress. The API may drastically changed, and this package
+// is incomplete
 package checkutil
 
 import (

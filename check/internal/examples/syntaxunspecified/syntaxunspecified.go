@@ -25,7 +25,7 @@ import (
 	"context"
 
 	"github.com/bufbuild/bufplugin-go/check"
-	"github.com/bufbuild/bufplugin-go/check/internal/checkutil"
+	"github.com/bufbuild/bufplugin-go/check/checkutil"
 )
 
 // SyntaxUnspecifiedRuleID is the Rule ID of the syntax unspecified Rule.

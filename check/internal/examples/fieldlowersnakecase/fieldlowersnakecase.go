@@ -26,7 +26,7 @@ import (
 	"unicode"
 
 	"github.com/bufbuild/bufplugin-go/check"
-	"github.com/bufbuild/bufplugin-go/check/internal/checkutil"
+	"github.com/bufbuild/bufplugin-go/check/checkutil"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 

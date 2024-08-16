@@ -80,7 +80,7 @@ issues:
       path: check/internal/examples
     - linters:
         - varnamelen
-      path: internal/checkutil/checkutil.go
+      path: check/checkutil/checkutil.go
     - linters:
         - varnamelen
       path: internal/pkg/xslices/xslices.go
