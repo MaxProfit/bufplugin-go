@@ -317,7 +317,10 @@ func getLocationForAddAnnotationOptions(
 			if !ok {
 				return nil, fmt.Errorf("cannot add annotation for unknown file: %q", fileDescriptor.Path())
 			}
-			return locationForFileAndDescriptor(file, descriptor), nil
+			return newLocation(
+				file,
+				fileDescriptor.SourceLocations().ByDescriptor(descriptor),
+			), nil
 		}
 		return nil, nil
 	}
@@ -330,7 +333,7 @@ func getLocationForAddAnnotationOptions(
 		if len(path) > 0 {
 			sourceLocation = file.FileDescriptor().SourceLocations().ByPath(path)
 		}
-		return locationForFileAndSourceLocation(file, sourceLocation), nil
+		return newLocation(file, sourceLocation), nil
 	}
 	return nil, nil
 }

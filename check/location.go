@@ -56,14 +56,6 @@ type Location interface {
 
 // *** PRIVATE ***
 
-func locationForFileAndDescriptor(file File, descriptor protoreflect.Descriptor) Location {
-	return newLocation(file, sourceLocationForDescriptor(descriptor))
-}
-
-func locationForFileAndSourceLocation(file File, sourceLocation protoreflect.SourceLocation) Location {
-	return newLocation(file, sourceLocation)
-}
-
 type location struct {
 	file           File
 	sourceLocation protoreflect.SourceLocation
@@ -134,13 +126,3 @@ func (l *location) toProto() *checkv1beta1.Location {
 }
 
 func (*location) isLocation() {}
-
-func sourceLocationForDescriptor(descriptor protoreflect.Descriptor) protoreflect.SourceLocation {
-	if descriptor == nil {
-		return protoreflect.SourceLocation{}
-	}
-	if fileDescriptor := descriptor.ParentFile(); fileDescriptor != nil {
-		return fileDescriptor.SourceLocations().ByDescriptor(descriptor)
-	}
-	return protoreflect.SourceLocation{}
-}
