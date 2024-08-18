@@ -17,7 +17,6 @@ package check
 import (
 	"slices"
 	"sort"
-	"strings"
 
 	checkv1beta1 "buf.build/gen/go/bufbuild/bufplugin/protocolbuffers/go/buf/plugin/check/v1beta1"
 	"github.com/bufbuild/bufplugin-go/internal/pkg/xslices"
@@ -76,17 +75,6 @@ type Rule interface {
 	toProto() *checkv1beta1.Rule
 
 	isRule()
-}
-
-// CompareRules returns -1 if one < two, 1 if one > two, 0 otherwise.
-func CompareRules(one Rule, two Rule) int {
-	if one == nil && two == nil {
-		return 0
-	}
-	return joinCompares(
-		nilCompare(one, two),
-		strings.Compare(one.ID(), two.ID()),
-	)
 }
 
 // *** PRIVATE ***
