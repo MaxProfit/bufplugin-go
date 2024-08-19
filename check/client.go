@@ -72,7 +72,13 @@ func NewClientForSpec(spec *Spec, options ...ClientOption) (Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	return newClient(pluginrpc.NewClient(pluginrpc.NewServerRunner(checkServer)), options...), nil
+	// Using ContentTypeBinary as there are items that ContentTypeJSON cannot serialize.
+	//
+	// For example, google.protobuf.Timestamps positive seconds and negative nanos will fail serialization.
+	// We make the choice for the user here that we will use binary.
+	//
+	// We may want to make binary the global default TODO.
+	return newClient(pluginrpc.NewClient(pluginrpc.NewServerRunner(checkServer), pluginrpc.ClientWithContentType(pluginrpc.ContentTypeBinary)), options...), nil
 }
 
 // CheckCallOption is an option for a Client.Check call.
