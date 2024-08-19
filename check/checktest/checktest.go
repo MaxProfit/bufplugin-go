@@ -166,6 +166,12 @@ type ExpectedAnnotation struct {
 	//
 	// Required.
 	RuleID string
+	// Message is the message returned from the annoation.
+	//
+	// If Message is not set on ExpectedAnnotation, this field will *not* be compared
+	// against the value in Annotation. That is, it is valid to have an Annotation return
+	// a message but to not set it on ExpectedAnnotation.
+	Message string
 	// Location is the location of the failure.
 	Location *ExpectedLocation
 	// AgainstLocation is the against location of the failure.
@@ -186,15 +192,68 @@ type ExpectedLocation struct {
 	EndColumn int
 }
 
-// ExpectedAnnotationsForAnnotations returns ExpectedAnnotations for the given Annotations.
-func ExpectedAnnotationsForAnnotations(annotations []check.Annotation) []ExpectedAnnotation {
-	return xslices.Map(annotations, ExpectedAnnotationForAnnotation)
+// AssertAnnotationsEqual asserts that the Annotations equal the expected Annotations.
+func AssertAnnotationsEqual(t *testing.T, expectedAnnotations []ExpectedAnnotation, actualAnnotations []check.Annotation) {
+	if len(expectedAnnotations) == 0 {
+		expectedAnnotations = nil
+	}
+	if len(actualAnnotations) == 0 {
+		actualAnnotations = nil
+	}
+	actualExpectedAnnotations := expectedAnnotationsForAnnotations(actualAnnotations)
+	for i, expectedAnnotation := range expectedAnnotations {
+		if expectedAnnotation.Message == "" {
+			actualExpectedAnnotations[i].Message = ""
+		}
+	}
+	assert.Equal(t, expectedAnnotations, actualExpectedAnnotations)
 }
 
-// ExpectedAnnotationForAnnotation returns an ExpectedAnnotation for the given Annotation.
-func ExpectedAnnotationForAnnotation(annotation check.Annotation) ExpectedAnnotation {
+// RequireAnnotationsEqual requires that the Annotations equal the expected Annotations.
+func RequireAnnotationsEqual(t *testing.T, expectedAnnotations []ExpectedAnnotation, actualAnnotations []check.Annotation) {
+	if len(expectedAnnotations) == 0 {
+		expectedAnnotations = nil
+	}
+	if len(actualAnnotations) == 0 {
+		actualAnnotations = nil
+	}
+	actualExpectedAnnotations := expectedAnnotationsForAnnotations(actualAnnotations)
+	for i, expectedAnnotation := range expectedAnnotations {
+		if expectedAnnotation.Message == "" {
+			actualExpectedAnnotations[i].Message = ""
+		}
+	}
+	require.Equal(t, expectedAnnotations, actualExpectedAnnotations)
+}
+
+// *** PRIVATE ***
+
+func validateProtoFileSpec(protoFileSpec *ProtoFileSpec) error {
+	if len(protoFileSpec.DirPaths) == 0 {
+		return errors.New("no DirPaths specified on ProtoFileSpec")
+	}
+	if len(protoFileSpec.FilePaths) == 0 {
+		return errors.New("no FilePaths specified on ProtoFileSpec")
+	}
+	return nil
+}
+
+// expectedAnnotationsForAnnotations returns ExpectedAnnotations for the given Annotations.
+//
+// Callers will need to filter out the Messages from the returned ExpectedAnnotations to conform
+// to the ExpectedAnnotations that are being compared against. See the note on ExpectedAnnotation.Message.
+func expectedAnnotationsForAnnotations(annotations []check.Annotation) []ExpectedAnnotation {
+	return xslices.Map(annotations, expectedAnnotationForAnnotation)
+}
+
+// expectedAnnotationForAnnotation returns an ExpectedAnnotation for the given Annotation.
+//
+// Callers will need to filter out the Messages from the returned ExpectedAnnotations to conform
+// to the ExpectedAnnotations that are being compared against. See the note on ExpectedAnnotation.Message.
+func expectedAnnotationForAnnotation(annotation check.Annotation) ExpectedAnnotation {
 	expectedAnnotation := ExpectedAnnotation{
-		RuleID: annotation.RuleID(),
+		RuleID:  annotation.RuleID(),
+		Message: annotation.Message(),
 	}
 	if location := annotation.Location(); location != nil {
 		expectedAnnotation.Location = &ExpectedLocation{
@@ -215,40 +274,6 @@ func ExpectedAnnotationForAnnotation(annotation check.Annotation) ExpectedAnnota
 		}
 	}
 	return expectedAnnotation
-}
-
-// AssertAnnotationsEqual asserts that the Annotations equal the expected Annotations.
-func AssertAnnotationsEqual(t *testing.T, expectedAnnotations []ExpectedAnnotation, actualAnnotations []check.Annotation) {
-	if len(expectedAnnotations) == 0 {
-		expectedAnnotations = nil
-	}
-	if len(actualAnnotations) == 0 {
-		actualAnnotations = nil
-	}
-	assert.Equal(t, expectedAnnotations, ExpectedAnnotationsForAnnotations(actualAnnotations))
-}
-
-// RequireAnnotationsEqual requires that the Annotations equal the expected Annotations.
-func RequireAnnotationsEqual(t *testing.T, expectedAnnotations []ExpectedAnnotation, actualAnnotations []check.Annotation) {
-	if len(expectedAnnotations) == 0 {
-		expectedAnnotations = nil
-	}
-	if len(actualAnnotations) == 0 {
-		actualAnnotations = nil
-	}
-	require.Equal(t, expectedAnnotations, ExpectedAnnotationsForAnnotations(actualAnnotations))
-}
-
-// *** PRIVATE ***
-
-func validateProtoFileSpec(protoFileSpec *ProtoFileSpec) error {
-	if len(protoFileSpec.DirPaths) == 0 {
-		return errors.New("no DirPaths specified on ProtoFileSpec")
-	}
-	if len(protoFileSpec.FilePaths) == 0 {
-		return errors.New("no FilePaths specified on ProtoFileSpec")
-	}
-	return nil
 }
 
 func compile(ctx context.Context, dirPaths []string, filePaths []string) ([]check.File, error) {
