@@ -32,7 +32,7 @@ func newCheckServer(checkServiceHandler v1beta1pluginrpc.CheckServiceHandler) (p
 		return nil, err
 	}
 	serverRegistrar := pluginrpc.NewServerRegistrar()
-	checkServiceServer := v1beta1pluginrpc.NewCheckServiceServer(pluginrpc.NewHandler(), checkServiceHandler)
+	checkServiceServer := v1beta1pluginrpc.NewCheckServiceServer(pluginrpc.NewHandler(spec), checkServiceHandler)
 	v1beta1pluginrpc.RegisterCheckServiceServer(serverRegistrar, checkServiceServer)
 	return pluginrpc.NewServer(spec, serverRegistrar)
 }

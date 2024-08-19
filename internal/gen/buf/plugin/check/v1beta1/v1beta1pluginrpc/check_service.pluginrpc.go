@@ -58,7 +58,10 @@ func (s CheckServiceSpecBuilder) Build() (pluginrpc_go.Spec, error) {
 		return nil, err
 	}
 	procedures = append(procedures, procedure)
-	return pluginrpc_go.NewSpec(procedures)
+	return pluginrpc_go.NewSpec(
+		procedures,
+		pluginrpc_go.AllContentTypes,
+	)
 }
 
 // CheckServiceClient is a client for the buf.plugin.check.v1beta1.CheckService service.
