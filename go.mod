@@ -6,7 +6,7 @@ toolchain go1.23.0
 
 require (
 	buf.build/gen/go/bufbuild/bufplugin/protocolbuffers/go v1.34.2-20240816190836-4b7606133d85.2
-	github.com/bufbuild/pluginrpc-go v0.0.0-20240819213252-f2e13af4a0b1
+	github.com/bufbuild/pluginrpc-go v0.0.0-20240819214658-f2d06a220d33
 	github.com/bufbuild/protocompile v0.14.0
 	github.com/bufbuild/protovalidate-go v0.6.3
 	github.com/stretchr/testify v1.9.0

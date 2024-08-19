@@ -22,6 +22,8 @@ github.com/bufbuild/pluginrpc-go v0.0.0-20240806221947-0f4109e5de7f h1:CT5YS9uCb
 github.com/bufbuild/pluginrpc-go v0.0.0-20240806221947-0f4109e5de7f/go.mod h1:BWzAlu7udHYPr9mYfHEvqgwIKDmzxzVZoyQ0otMFPeE=
 github.com/bufbuild/pluginrpc-go v0.0.0-20240819213252-f2e13af4a0b1 h1:IUpvq/wfKKGuSotOqE7bJgr0JzoLsAEGGn1YZ/jBCOc=
 github.com/bufbuild/pluginrpc-go v0.0.0-20240819213252-f2e13af4a0b1/go.mod h1:wlbTpcV8dqtNOdYEwEsNqFQX0JU8QdW+K/iN8bqNo/E=
+github.com/bufbuild/pluginrpc-go v0.0.0-20240819214658-f2d06a220d33 h1:tFDtPzzspRf1bjhGPfs5n1bNafMjvx2nubXhTOlZzks=
+github.com/bufbuild/pluginrpc-go v0.0.0-20240819214658-f2d06a220d33/go.mod h1:wlbTpcV8dqtNOdYEwEsNqFQX0JU8QdW+K/iN8bqNo/E=
 github.com/bufbuild/protocompile v0.14.0 h1:z3DW4IvXE5G/uTOnSQn+qwQQxvhckkTWLS/0No/o7KU=
 github.com/bufbuild/protocompile v0.14.0/go.mod h1:N6J1NYzkspJo3ZwyL4Xjvli86XOj1xq4qAasUFxGups=
 github.com/bufbuild/protovalidate-go v0.6.3 h1:wxQyzW035zM16Binbaz/nWAzS12dRIXhZdSUWRY7Fv0=
