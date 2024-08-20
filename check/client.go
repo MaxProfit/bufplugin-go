@@ -78,7 +78,7 @@ func NewClientForSpec(spec *Spec, options ...ClientOption) (Client, error) {
 	// We make the choice for the user here that we will use binary.
 	//
 	// We may want to make binary the global default TODO.
-	return newClient(pluginrpc.NewClient(pluginrpc.NewServerRunner(checkServer), pluginrpc.ClientWithContentType(pluginrpc.ContentTypeBinary)), options...), nil
+	return newClient(pluginrpc.NewClient(pluginrpc.NewServerRunner(checkServer)), options...), nil
 }
 
 // CheckCallOption is an option for a Client.Check call.

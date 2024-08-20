@@ -58,10 +58,7 @@ func (s CheckServiceSpecBuilder) Build() (pluginrpc_go.Spec, error) {
 		return nil, err
 	}
 	procedures = append(procedures, procedure)
-	return pluginrpc_go.NewSpec(
-		procedures,
-		pluginrpc_go.AllContentTypes,
-	)
+	return pluginrpc_go.NewSpec(procedures)
 }
 
 // CheckServiceClient is a client for the buf.plugin.check.v1beta1.CheckService service.
@@ -96,9 +93,9 @@ type CheckServiceServer interface {
 	// Check a set of Files for failures.
 	//
 	// All Annotations returned will have an ID that is contained within a Rule listed by ListRules.
-	Check(context.Context, pluginrpc_go.Env) error
+	Check(context.Context, pluginrpc_go.HandleEnv, ...pluginrpc_go.HandleOption) error
 	// List all rules that this service implements.
-	ListRules(context.Context, pluginrpc_go.Env) error
+	ListRules(context.Context, pluginrpc_go.HandleEnv, ...pluginrpc_go.HandleOption) error
 }
 
 // NewCheckServiceServer constructs a server for the buf.plugin.check.v1beta1.CheckService service.
@@ -148,10 +145,10 @@ type checkServiceServer struct {
 }
 
 // Check calls buf.plugin.check.v1beta1.CheckService.Check.
-func (c *checkServiceServer) Check(ctx context.Context, env pluginrpc_go.Env) error {
+func (c *checkServiceServer) Check(ctx context.Context, handleEnv pluginrpc_go.HandleEnv, options ...pluginrpc_go.HandleOption) error {
 	return c.handler.Handle(
 		ctx,
-		env,
+		handleEnv,
 		&v1beta1.CheckRequest{},
 		func(ctx context.Context, anyReq any) (any, error) {
 			req, ok := anyReq.(*v1beta1.CheckRequest)
@@ -160,14 +157,15 @@ func (c *checkServiceServer) Check(ctx context.Context, env pluginrpc_go.Env) er
 			}
 			return c.checkServiceHandler.Check(ctx, req)
 		},
+		options...,
 	)
 }
 
 // ListRules calls buf.plugin.check.v1beta1.CheckService.ListRules.
-func (c *checkServiceServer) ListRules(ctx context.Context, env pluginrpc_go.Env) error {
+func (c *checkServiceServer) ListRules(ctx context.Context, handleEnv pluginrpc_go.HandleEnv, options ...pluginrpc_go.HandleOption) error {
 	return c.handler.Handle(
 		ctx,
-		env,
+		handleEnv,
 		&v1beta1.ListRulesRequest{},
 		func(ctx context.Context, anyReq any) (any, error) {
 			req, ok := anyReq.(*v1beta1.ListRulesRequest)
@@ -176,5 +174,6 @@ func (c *checkServiceServer) ListRules(ctx context.Context, env pluginrpc_go.Env
 			}
 			return c.checkServiceHandler.ListRules(ctx, req)
 		},
+		options...,
 	)
 }
