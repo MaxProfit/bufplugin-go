@@ -6,7 +6,7 @@ toolchain go1.23.0
 
 require (
 	buf.build/gen/go/bufbuild/bufplugin/protocolbuffers/go v1.34.2-20240816190836-4b7606133d85.2
-	github.com/bufbuild/pluginrpc-go v0.0.0-20240819214658-f2d06a220d33
+	github.com/bufbuild/pluginrpc-go v0.0.0-20240820000016-1463b4d2b3e6
 	github.com/bufbuild/protocompile v0.14.0
 	github.com/bufbuild/protovalidate-go v0.6.3
 	github.com/stretchr/testify v1.9.0
@@ -14,7 +14,7 @@ require (
 )
 
 require (
-	buf.build/gen/go/bufbuild/pluginrpc/protocolbuffers/go v1.34.2-20240819201903-09e5bbf35c41.2 // indirect
+	buf.build/gen/go/bufbuild/pluginrpc/protocolbuffers/go v1.34.2-20240819235812-34e4e0b526fa.2 // indirect
 	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.34.2-20240717164558-a6c49f84cc0f.2 // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
