@@ -72,10 +72,36 @@ func ruleSpecToRule(ruleSpec *RuleSpec, idToCategory map[string]Category) (Rule,
 	), nil
 }
 
-func validateRuleSpec(_ *protovalidate.Validator, ruleSpec *RuleSpec, categoryIDMap map[string]struct{}) error {
-	if ruleSpec.ID == "" {
-		return errors.New("RuleSpec.ID is empty")
+func validateRuleSpecs(
+	validator *protovalidate.Validator,
+	ruleSpecs []*RuleSpec,
+	categoryIDMap map[string]struct{},
+) error {
+	ruleIDs := xslices.Map(ruleSpecs, func(ruleSpec *RuleSpec) string { return ruleSpec.ID })
+	if err := validateNoDuplicateRuleIDs(ruleIDs); err != nil {
+		return err
 	}
+	ruleIDToRuleSpec := make(map[string]*RuleSpec)
+	for _, ruleSpec := range ruleSpecs {
+		if ruleSpec.ID == "" {
+			return errors.New("RuleSpec.ID is empty")
+		}
+		ruleIDToRuleSpec[ruleSpec.ID] = ruleSpec
+	}
+	for _, ruleSpec := range ruleSpecs {
+		if err := validateRuleSpec(validator, ruleSpec, ruleIDToRuleSpec, categoryIDMap); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func validateRuleSpec(
+	_ *protovalidate.Validator,
+	ruleSpec *RuleSpec,
+	ruleIDToRuleSpec map[string]*RuleSpec,
+	categoryIDMap map[string]struct{},
+) error {
 	for _, categoryID := range ruleSpec.CategoryIDs {
 		if _, ok := categoryIDMap[categoryID]; !ok {
 			return fmt.Errorf("no category for id %q", categoryID)
@@ -95,6 +121,15 @@ func validateRuleSpec(_ *protovalidate.Validator, ruleSpec *RuleSpec, categoryID
 	}
 	if len(ruleSpec.ReplacementIDs) > 0 && !ruleSpec.Deprecated {
 		return fmt.Errorf("RuleSpec.ReplacementIDs had values %v but Deprecated was false", ruleSpec.ReplacementIDs)
+	}
+	for _, replacementID := range ruleSpec.ReplacementIDs {
+		replacementRuleSpec, ok := ruleIDToRuleSpec[replacementID]
+		if !ok {
+			return fmt.Errorf("RuleSpec %q specified replacement ID %q which was not found", ruleSpec.ID, replacementID)
+		}
+		if replacementRuleSpec.Deprecated {
+			return fmt.Errorf("Deprecated RuleSpec %q specified replacement ID %q which also deprecated", ruleSpec.ID, replacementID)
+		}
 	}
 	// We do this on the server-side only, this shouldn't be used client-side.
 	// TODO: This isn't working

@@ -17,8 +17,6 @@ package check
 import (
 	"context"
 	"errors"
-	"fmt"
-	"slices"
 
 	"github.com/bufbuild/bufplugin-go/internal/pkg/xslices"
 	"github.com/bufbuild/protovalidate-go"
@@ -58,35 +56,18 @@ func validateSpec(validator *protovalidate.Validator, spec *Spec) error {
 	if len(spec.Rules) == 0 {
 		return errors.New("Spec.Rules is empty")
 	}
-	ruleIDs := xslices.Map(spec.Rules, func(ruleSpec *RuleSpec) string { return ruleSpec.ID })
-	if err := validateNoDuplicateRuleIDs(ruleIDs); err != nil {
-		return err
-	}
 	categoryIDs := xslices.Map(spec.Categories, func(categorySpec *CategorySpec) string { return categorySpec.ID })
-	if err := validateNoDuplicateCategoryIDs(categoryIDs); err != nil {
-		return err
-	}
-	ruleAndCategoryIDs := append(slices.Clone(ruleIDs), categoryIDs...)
-	if err := validateNoDuplicateRuleOrCategoryIDs(ruleAndCategoryIDs); err != nil {
+	if err := validateNoDuplicateRuleOrCategoryIDs(
+		append(
+			xslices.Map(spec.Rules, func(ruleSpec *RuleSpec) string { return ruleSpec.ID }),
+			categoryIDs...,
+		),
+	); err != nil {
 		return err
 	}
 	categoryIDMap := xslices.ToStructMap(categoryIDs)
-	categoryIDForRulesMap := make(map[string]struct{})
-	for _, ruleSpec := range spec.Rules {
-		if err := validateRuleSpec(validator, ruleSpec, categoryIDMap); err != nil {
-			return err
-		}
-		for _, categoryID := range ruleSpec.CategoryIDs {
-			categoryIDForRulesMap[categoryID] = struct{}{}
-		}
+	if err := validateRuleSpecs(validator, spec.Rules, categoryIDMap); err != nil {
+		return err
 	}
-	for _, categorySpec := range spec.Categories {
-		if err := validateCategorySpec(validator, categorySpec); err != nil {
-			return err
-		}
-		if _, ok := categoryIDForRulesMap[categorySpec.ID]; !ok {
-			return fmt.Errorf("no Rule has a Category ID of %q", categorySpec.ID)
-		}
-	}
-	return nil
+	return validateCategorySpecs(validator, spec.Categories, spec.Rules)
 }
