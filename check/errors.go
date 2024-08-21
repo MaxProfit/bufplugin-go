@@ -15,6 +15,7 @@
 package check
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 )
@@ -94,7 +95,7 @@ type unexpectedOptionValueTypeError struct {
 	actual   any
 }
 
-func newUnexpectedOptionValueError(key string, expected any, actual any) *unexpectedOptionValueTypeError {
+func newUnexpectedOptionValueTypeError(key string, expected any, actual any) *unexpectedOptionValueTypeError {
 	return &unexpectedOptionValueTypeError{
 		key:      key,
 		expected: expected,
@@ -111,4 +112,112 @@ func (u *unexpectedOptionValueTypeError) Error() string {
 	_, _ = sb.WriteString(u.key)
 	_, _ = sb.WriteString(fmt.Sprintf(`": expected %T, got %T`, u.expected, u.actual))
 	return sb.String()
+}
+
+type validateRuleSpecError struct {
+	delegate error
+}
+
+func newValidateRuleSpecError(message string) *validateRuleSpecError {
+	return &validateRuleSpecError{
+		delegate: errors.New(message),
+	}
+}
+
+func newValidateRuleSpecErrorf(format string, args ...any) *validateRuleSpecError {
+	return &validateRuleSpecError{
+		delegate: fmt.Errorf(format, args...),
+	}
+}
+
+func (vr *validateRuleSpecError) Error() string {
+	if vr == nil {
+		return ""
+	}
+	if vr.delegate == nil {
+		return ""
+	}
+	var sb strings.Builder
+	_, _ = sb.WriteString(`invalid check.RuleSpec: `)
+	_, _ = sb.WriteString(vr.delegate.Error())
+	return sb.String()
+}
+
+func (vr *validateRuleSpecError) Unwrap() error {
+	if vr == nil {
+		return nil
+	}
+	return vr.delegate
+}
+
+type validateCategorySpecError struct {
+	delegate error
+}
+
+func newValidateCategorySpecError(message string) *validateCategorySpecError {
+	return &validateCategorySpecError{
+		delegate: errors.New(message),
+	}
+}
+
+func newValidateCategorySpecErrorf(format string, args ...any) *validateCategorySpecError {
+	return &validateCategorySpecError{
+		delegate: fmt.Errorf(format, args...),
+	}
+}
+
+func (vr *validateCategorySpecError) Error() string {
+	if vr == nil {
+		return ""
+	}
+	if vr.delegate == nil {
+		return ""
+	}
+	var sb strings.Builder
+	_, _ = sb.WriteString(`invalid check.CategorySpec: `)
+	_, _ = sb.WriteString(vr.delegate.Error())
+	return sb.String()
+}
+
+func (vr *validateCategorySpecError) Unwrap() error {
+	if vr == nil {
+		return nil
+	}
+	return vr.delegate
+}
+
+type validateSpecError struct {
+	delegate error
+}
+
+func newValidateSpecError(message string) *validateSpecError {
+	return &validateSpecError{
+		delegate: errors.New(message),
+	}
+}
+
+func wrapValidateSpecError(delegate error) *validateSpecError {
+	return &validateSpecError{
+		delegate: delegate,
+	}
+}
+
+func (vr *validateSpecError) Error() string {
+	if vr == nil {
+		return ""
+	}
+	if vr.delegate == nil {
+		return ""
+	}
+	var sb strings.Builder
+	_, _ = sb.WriteString(`invalid check.Spec: `)
+	_, _ = sb.WriteString(vr.delegate.Error())
+	return sb.String()
+}
+
+func (vr *validateSpecError) Unwrap() error {
+	if vr == nil {
+		return nil
+	}
+	return vr.delegate
 }

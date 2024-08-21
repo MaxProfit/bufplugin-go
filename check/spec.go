@@ -16,7 +16,6 @@ package check
 
 import (
 	"context"
-	"errors"
 
 	"github.com/bufbuild/bufplugin-go/internal/pkg/xslices"
 	"github.com/bufbuild/protovalidate-go"
@@ -54,7 +53,7 @@ type Spec struct {
 
 func validateSpec(validator *protovalidate.Validator, spec *Spec) error {
 	if len(spec.Rules) == 0 {
-		return errors.New("Spec.Rules is empty")
+		return newValidateSpecError("Rules is empty")
 	}
 	categoryIDs := xslices.Map(spec.Categories, func(categorySpec *CategorySpec) string { return categorySpec.ID })
 	if err := validateNoDuplicateRuleOrCategoryIDs(
@@ -63,7 +62,7 @@ func validateSpec(validator *protovalidate.Validator, spec *Spec) error {
 			categoryIDs...,
 		),
 	); err != nil {
-		return err
+		return wrapValidateSpecError(err)
 	}
 	categoryIDMap := xslices.ToStructMap(categoryIDs)
 	if err := validateRuleSpecs(validator, spec.Rules, categoryIDMap); err != nil {

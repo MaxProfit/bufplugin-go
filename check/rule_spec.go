@@ -15,7 +15,6 @@
 package check
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/bufbuild/bufplugin-go/internal/pkg/xslices"
@@ -84,7 +83,7 @@ func validateRuleSpecs(
 	ruleIDToRuleSpec := make(map[string]*RuleSpec)
 	for _, ruleSpec := range ruleSpecs {
 		if ruleSpec.ID == "" {
-			return errors.New("RuleSpec.ID is empty")
+			return newValidateRuleSpecError("ID is empty")
 		}
 		ruleIDToRuleSpec[ruleSpec.ID] = ruleSpec
 	}
@@ -104,31 +103,31 @@ func validateRuleSpec(
 ) error {
 	for _, categoryID := range ruleSpec.CategoryIDs {
 		if _, ok := categoryIDMap[categoryID]; !ok {
-			return fmt.Errorf("no category for id %q", categoryID)
+			return newValidateRuleSpecErrorf("no category for ID %q", categoryID)
 		}
 	}
 	if ruleSpec.Purpose == "" {
-		return fmt.Errorf("RuleSpec.Purpose is not set for ID %q", ruleSpec.ID)
+		return newValidateRuleSpecErrorf("Purpose is not set for ID %q", ruleSpec.ID)
 	}
 	if ruleSpec.Type == 0 {
-		return fmt.Errorf("RuleSpec.Type is not set for ID %q", ruleSpec.ID)
+		return newValidateRuleSpecErrorf("Type is not set for ID %q", ruleSpec.ID)
 	}
 	if _, ok := ruleTypeToProtoRuleType[ruleSpec.Type]; !ok {
-		return fmt.Errorf("RuleSpec.Type is unknown: %q", ruleSpec.Type)
+		return newValidateRuleSpecErrorf("Type is unknown: %q", ruleSpec.Type)
 	}
 	if ruleSpec.Handler == nil {
-		return fmt.Errorf("RuleSpec.Handler is not set for ID %q", ruleSpec.ID)
+		return newValidateRuleSpecErrorf("Handler is not set for ID %q", ruleSpec.ID)
 	}
 	if len(ruleSpec.ReplacementIDs) > 0 && !ruleSpec.Deprecated {
-		return fmt.Errorf("RuleSpec.ReplacementIDs had values %v but Deprecated was false", ruleSpec.ReplacementIDs)
+		return newValidateRuleSpecErrorf("ID %q had ReplacementIDs but Deprecated was false", ruleSpec.ID)
 	}
 	for _, replacementID := range ruleSpec.ReplacementIDs {
 		replacementRuleSpec, ok := ruleIDToRuleSpec[replacementID]
 		if !ok {
-			return fmt.Errorf("RuleSpec %q specified replacement ID %q which was not found", ruleSpec.ID, replacementID)
+			return newValidateRuleSpecErrorf("ID %q specified replacement ID %q which was not found", ruleSpec.ID, replacementID)
 		}
 		if replacementRuleSpec.Deprecated {
-			return fmt.Errorf("Deprecated RuleSpec %q specified replacement ID %q which also deprecated", ruleSpec.ID, replacementID)
+			return newValidateRuleSpecErrorf("Deprecated ID %q specified replacement ID %q which also deprecated", ruleSpec.ID, replacementID)
 		}
 	}
 	// We do this on the server-side only, this shouldn't be used client-side.

@@ -15,9 +15,6 @@
 package check
 
 import (
-	"errors"
-	"fmt"
-
 	"github.com/bufbuild/bufplugin-go/internal/pkg/xslices"
 	"github.com/bufbuild/protovalidate-go"
 )
@@ -68,7 +65,7 @@ func validateCategorySpecs(
 	categoryIDToCategorySpec := make(map[string]*CategorySpec)
 	for _, categorySpec := range categorySpecs {
 		if categorySpec.ID == "" {
-			return errors.New("CategorySpec.ID is empty")
+			return newValidateCategorySpecError("ID is empty")
 		}
 		categoryIDToCategorySpec[categorySpec.ID] = categorySpec
 	}
@@ -77,7 +74,7 @@ func validateCategorySpecs(
 			return err
 		}
 		if _, ok := categoryIDForRulesMap[categorySpec.ID]; !ok {
-			return fmt.Errorf("no Rule has a Category ID of %q", categorySpec.ID)
+			return newValidateCategorySpecErrorf("no Rule has a Category ID of %q", categorySpec.ID)
 		}
 	}
 	return nil
@@ -89,18 +86,18 @@ func validateCategorySpec(
 	categoryIDToCategorySpec map[string]*CategorySpec,
 ) error {
 	if categorySpec.Purpose == "" {
-		return fmt.Errorf("CategorySpec.Purpose is not set for ID %q", categorySpec.ID)
+		return newValidateCategorySpecErrorf("Purpose is not set for ID %q", categorySpec.ID)
 	}
 	if len(categorySpec.ReplacementIDs) > 0 && !categorySpec.Deprecated {
-		return fmt.Errorf("CategorySpec.ReplacementIDs had values %v but Deprecated was false", categorySpec.ReplacementIDs)
+		return newValidateCategorySpecErrorf("ID %q had ReplacementIDs but Deprecated was false", categorySpec.ID)
 	}
 	for _, replacementID := range categorySpec.ReplacementIDs {
 		replacementCategorySpec, ok := categoryIDToCategorySpec[replacementID]
 		if !ok {
-			return fmt.Errorf("CategorySpec %q specified replacement ID %q which was not found", categorySpec.ID, replacementID)
+			return newValidateCategorySpecErrorf("ID %q specified replacement ID %q which was not found", categorySpec.ID, replacementID)
 		}
 		if replacementCategorySpec.Deprecated {
-			return fmt.Errorf("Deprecated CategorySpec %q specified replacement ID %q which also deprecated", categorySpec.ID, replacementID)
+			return newValidateCategorySpecErrorf("Deprecated ID %q specified replacement ID %q which also deprecated", categorySpec.ID, replacementID)
 		}
 	}
 	// We do this on the server-side only, this shouldn't be used client-side.

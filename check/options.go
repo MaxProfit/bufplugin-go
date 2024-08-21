@@ -103,7 +103,7 @@ func GetBoolValue(options Options, key string) (bool, error) {
 	}
 	value, ok := anyValue.(bool)
 	if !ok {
-		return false, newUnexpectedOptionValueError(key, false, anyValue)
+		return false, newUnexpectedOptionValueTypeError(key, false, anyValue)
 	}
 	return value, nil
 }
@@ -118,7 +118,7 @@ func GetInt64Value(options Options, key string) (int64, error) {
 	}
 	value, ok := anyValue.(int64)
 	if !ok {
-		return 0, newUnexpectedOptionValueError(key, int64(0), anyValue)
+		return 0, newUnexpectedOptionValueTypeError(key, int64(0), anyValue)
 	}
 	return value, nil
 }
@@ -133,7 +133,7 @@ func GetFloat64Value(options Options, key string) (float64, error) {
 	}
 	value, ok := anyValue.(float64)
 	if !ok {
-		return 0.0, newUnexpectedOptionValueError(key, float64(0.0), anyValue)
+		return 0.0, newUnexpectedOptionValueTypeError(key, float64(0.0), anyValue)
 	}
 	return value, nil
 }
@@ -148,7 +148,7 @@ func GetStringValue(options Options, key string) (string, error) {
 	}
 	value, ok := anyValue.(string)
 	if !ok {
-		return "", newUnexpectedOptionValueError(key, "", anyValue)
+		return "", newUnexpectedOptionValueTypeError(key, "", anyValue)
 	}
 	return value, nil
 }
@@ -163,7 +163,7 @@ func GetBytesValue(options Options, key string) ([]byte, error) {
 	}
 	value, ok := anyValue.([]byte)
 	if !ok {
-		return nil, newUnexpectedOptionValueError(key, []byte{}, anyValue)
+		return nil, newUnexpectedOptionValueTypeError(key, []byte{}, anyValue)
 	}
 	return value, nil
 }
@@ -178,7 +178,7 @@ func GetInt64SliceValue(options Options, key string) ([]int64, error) {
 	}
 	value, ok := anyValue.([]int64)
 	if !ok {
-		return nil, newUnexpectedOptionValueError(key, []int64{}, anyValue)
+		return nil, newUnexpectedOptionValueTypeError(key, []int64{}, anyValue)
 	}
 	return value, nil
 }
@@ -193,7 +193,7 @@ func GetFloat64SliceValue(options Options, key string) ([]float64, error) {
 	}
 	value, ok := anyValue.([]float64)
 	if !ok {
-		return nil, newUnexpectedOptionValueError(key, []float64{}, anyValue)
+		return nil, newUnexpectedOptionValueTypeError(key, []float64{}, anyValue)
 	}
 	return value, nil
 }
@@ -208,7 +208,7 @@ func GetStringSliceValue(options Options, key string) ([]string, error) {
 	}
 	value, ok := anyValue.([]string)
 	if !ok {
-		return nil, newUnexpectedOptionValueError(key, []string{}, anyValue)
+		return nil, newUnexpectedOptionValueTypeError(key, []string{}, anyValue)
 	}
 	return value, nil
 }
