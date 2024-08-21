@@ -92,3 +92,12 @@ func MapKeysToSlice[K comparable, V any](m map[K]V) []K {
 	}
 	return s
 }
+
+// ToStructMap converts the slice to a map with struct{} values.
+func ToStructMap[T comparable](s []T) map[T]struct{} {
+	m := make(map[T]struct{}, len(s))
+	for _, e := range s {
+		m[e] = struct{}{}
+	}
+	return m
+}

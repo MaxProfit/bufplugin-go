@@ -15,6 +15,7 @@
 package check
 
 import (
+	"fmt"
 	"slices"
 	"sort"
 
@@ -40,11 +41,7 @@ type Rule interface {
 	// Buf uses categories to include or exclude sets of rules via configuration.
 	//
 	// Optional.
-	//
-	// The constraints for categories are the same as IDs: each value must have at least four
-	// characters, start and end with a capital letter from A-Z, and only consist of capital
-	// letters from A-Z and underscores.
-	Categories() []string
+	Categories() []Category
 	// Whether or not the Rule is a default Rule.
 	//
 	// If a Rule is a default Rule, it will be called if a Request specifies no specific Rule IDs.
@@ -81,7 +78,7 @@ type Rule interface {
 
 type rule struct {
 	id             string
-	categories     []string
+	categories     []Category
 	isDefault      bool
 	purpose        string
 	ruleType       RuleType
@@ -91,7 +88,7 @@ type rule struct {
 
 func newRule(
 	id string,
-	categories []string,
+	categories []Category,
 	isDefault bool,
 	purpose string,
 	ruleType RuleType,
@@ -113,7 +110,7 @@ func (r *rule) ID() string {
 	return r.id
 }
 
-func (r *rule) Categories() []string {
+func (r *rule) Categories() []Category {
 	return slices.Clone(r.categories)
 }
 
@@ -144,7 +141,7 @@ func (r *rule) toProto() *checkv1beta1.Rule {
 	protoRuleType := ruleTypeToProtoRuleType[r.ruleType]
 	return &checkv1beta1.Rule{
 		Id:             r.id,
-		Categories:     r.categories,
+		CategoryIds:    xslices.Map(r.categories, Category.ID),
 		Default:        r.isDefault,
 		Purpose:        r.purpose,
 		Type:           protoRuleType,
@@ -155,12 +152,25 @@ func (r *rule) toProto() *checkv1beta1.Rule {
 
 func (*rule) isRule() {}
 
-func ruleForProtoRule(protoRule *checkv1beta1.Rule) (Rule, error) {
+func ruleForProtoRule(protoRule *checkv1beta1.Rule, idToCategory map[string]Category) (Rule, error) {
+	categories, err := xslices.MapError(
+		protoRule.GetCategoryIds(),
+		func(id string) (Category, error) {
+			category, ok := idToCategory[id]
+			if !ok {
+				return nil, fmt.Errorf("no category for id %q", id)
+			}
+			return category, nil
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
 	// TODO: We need to do some validation, even if we can't do full-on protovalidate (should we?)
 	ruleType := protoRuleTypeToRuleType[protoRule.GetType()]
 	return newRule(
 		protoRule.GetId(),
-		protoRule.GetCategories(),
+		categories,
 		protoRule.GetDefault(),
 		protoRule.GetPurpose(),
 		ruleType,
@@ -177,20 +187,38 @@ func validateNoDuplicateRules(rules []Rule) error {
 	return validateNoDuplicateRuleIDs(xslices.Map(rules, Rule.ID))
 }
 
-func validateNoDuplicateRuleIDs(ruleIDs []string) error {
-	ruleIDToCount := make(map[string]int, len(ruleIDs))
-	for _, ruleID := range ruleIDs {
-		ruleIDToCount[ruleID]++
+func validateNoDuplicateRuleIDs(ids []string) error {
+	idToCount := make(map[string]int, len(ids))
+	for _, id := range ids {
+		idToCount[id]++
 	}
-	var duplicateRuleIDs []string
-	for ruleID, count := range ruleIDToCount {
+	var duplicateIDs []string
+	for id, count := range idToCount {
 		if count > 1 {
-			duplicateRuleIDs = append(duplicateRuleIDs, ruleID)
+			duplicateIDs = append(duplicateIDs, id)
 		}
 	}
-	if len(duplicateRuleIDs) > 0 {
-		sort.Strings(duplicateRuleIDs)
-		return newDuplicateRuleError(duplicateRuleIDs)
+	if len(duplicateIDs) > 0 {
+		sort.Strings(duplicateIDs)
+		return newDuplicateRuleIDError(duplicateIDs)
+	}
+	return nil
+}
+
+func validateNoDuplicateRuleOrCategoryIDs(ids []string) error {
+	idToCount := make(map[string]int, len(ids))
+	for _, id := range ids {
+		idToCount[id]++
+	}
+	var duplicateIDs []string
+	for id, count := range idToCount {
+		if count > 1 {
+			duplicateIDs = append(duplicateIDs, id)
+		}
+	}
+	if len(duplicateIDs) > 0 {
+		sort.Strings(duplicateIDs)
+		return newDuplicateRuleOrCategoryIDError(duplicateIDs)
 	}
 	return nil
 }

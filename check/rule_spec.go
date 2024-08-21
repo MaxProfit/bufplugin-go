@@ -18,6 +18,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/bufbuild/bufplugin-go/internal/pkg/xslices"
 	"github.com/bufbuild/protovalidate-go"
 )
 
@@ -30,9 +31,9 @@ import (
 // based on the provided RuleSpecs.
 type RuleSpec struct {
 	// Required.
-	ID         string
-	Categories []string
-	IsDefault  bool
+	ID          string
+	CategoryIDs []string
+	IsDefault   bool
 	// Required.
 	Purpose string
 	// Required.
@@ -46,21 +47,39 @@ type RuleSpec struct {
 // *** PRIVATE ***
 
 // Assumes that the RuleSpec is validated.
-func ruleSpecToRule(ruleSpec *RuleSpec) Rule {
+func ruleSpecToRule(ruleSpec *RuleSpec, idToCategory map[string]Category) (Rule, error) {
+	categories, err := xslices.MapError(
+		ruleSpec.CategoryIDs,
+		func(id string) (Category, error) {
+			category, ok := idToCategory[id]
+			if !ok {
+				return nil, fmt.Errorf("no category for id %q", id)
+			}
+			return category, nil
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
 	return newRule(
 		ruleSpec.ID,
-		ruleSpec.Categories,
+		categories,
 		ruleSpec.IsDefault,
 		ruleSpec.Purpose,
 		ruleSpec.Type,
 		ruleSpec.Deprecated,
 		ruleSpec.ReplacementIDs,
-	)
+	), nil
 }
 
-func validateRuleSpec(_ *protovalidate.Validator, ruleSpec *RuleSpec) error {
+func validateRuleSpec(_ *protovalidate.Validator, ruleSpec *RuleSpec, categoryIDMap map[string]struct{}) error {
 	if ruleSpec.ID == "" {
 		return errors.New("RuleSpec.ID is empty")
+	}
+	for _, categoryID := range ruleSpec.CategoryIDs {
+		if _, ok := categoryIDMap[categoryID]; !ok {
+			return fmt.Errorf("no category for id %q", categoryID)
+		}
 	}
 	if ruleSpec.Purpose == "" {
 		return fmt.Errorf("RuleSpec.Purpose is not set for ID %q", ruleSpec.ID)

@@ -37,23 +37,31 @@ const (
 	CheckServiceCheckPath = "/buf.plugin.check.v1beta1.CheckService/Check"
 	// CheckServiceListRulesPath is the path of the CheckService's ListRules RPC.
 	CheckServiceListRulesPath = "/buf.plugin.check.v1beta1.CheckService/ListRules"
+	// CheckServiceListCategoriesPath is the path of the CheckService's ListCategories RPC.
+	CheckServiceListCategoriesPath = "/buf.plugin.check.v1beta1.CheckService/ListCategories"
 )
 
 // CheckServiceSpecBuilder builds a Spec for the buf.plugin.check.v1beta1.CheckService service.
 type CheckServiceSpecBuilder struct {
-	Check     []pluginrpc_go.ProcedureOption
-	ListRules []pluginrpc_go.ProcedureOption
+	Check          []pluginrpc_go.ProcedureOption
+	ListRules      []pluginrpc_go.ProcedureOption
+	ListCategories []pluginrpc_go.ProcedureOption
 }
 
 // Build builds a Spec for the buf.plugin.check.v1beta1.CheckService service.
 func (s CheckServiceSpecBuilder) Build() (pluginrpc_go.Spec, error) {
-	procedures := make([]pluginrpc_go.Procedure, 0, 2)
+	procedures := make([]pluginrpc_go.Procedure, 0, 3)
 	procedure, err := pluginrpc_go.NewProcedure(CheckServiceCheckPath, s.Check...)
 	if err != nil {
 		return nil, err
 	}
 	procedures = append(procedures, procedure)
 	procedure, err = pluginrpc_go.NewProcedure(CheckServiceListRulesPath, s.ListRules...)
+	if err != nil {
+		return nil, err
+	}
+	procedures = append(procedures, procedure)
+	procedure, err = pluginrpc_go.NewProcedure(CheckServiceListCategoriesPath, s.ListCategories...)
 	if err != nil {
 		return nil, err
 	}
@@ -69,6 +77,8 @@ type CheckServiceClient interface {
 	Check(context.Context, *v1beta1.CheckRequest, ...pluginrpc_go.CallOption) (*v1beta1.CheckResponse, error)
 	// List all rules that this service implements.
 	ListRules(context.Context, *v1beta1.ListRulesRequest, ...pluginrpc_go.CallOption) (*v1beta1.ListRulesResponse, error)
+	// List all categories that this service implements.
+	ListCategories(context.Context, *v1beta1.ListCategoriesRequest, ...pluginrpc_go.CallOption) (*v1beta1.ListCategoriesResponse, error)
 }
 
 // NewCheckServiceClient constructs a client for the buf.plugin.check.v1beta1.CheckService service.
@@ -86,6 +96,8 @@ type CheckServiceHandler interface {
 	Check(context.Context, *v1beta1.CheckRequest) (*v1beta1.CheckResponse, error)
 	// List all rules that this service implements.
 	ListRules(context.Context, *v1beta1.ListRulesRequest) (*v1beta1.ListRulesResponse, error)
+	// List all categories that this service implements.
+	ListCategories(context.Context, *v1beta1.ListCategoriesRequest) (*v1beta1.ListCategoriesResponse, error)
 }
 
 // CheckServiceServer serves the buf.plugin.check.v1beta1.CheckService service.
@@ -96,6 +108,8 @@ type CheckServiceServer interface {
 	Check(context.Context, pluginrpc_go.HandleEnv, ...pluginrpc_go.HandleOption) error
 	// List all rules that this service implements.
 	ListRules(context.Context, pluginrpc_go.HandleEnv, ...pluginrpc_go.HandleOption) error
+	// List all categories that this service implements.
+	ListCategories(context.Context, pluginrpc_go.HandleEnv, ...pluginrpc_go.HandleOption) error
 }
 
 // NewCheckServiceServer constructs a server for the buf.plugin.check.v1beta1.CheckService service.
@@ -111,6 +125,7 @@ func NewCheckServiceServer(handler pluginrpc_go.Handler, checkServiceHandler Che
 func RegisterCheckServiceServer(serverRegistrar pluginrpc_go.ServerRegistrar, checkServiceServer CheckServiceServer) {
 	serverRegistrar.Register(CheckServiceCheckPath, checkServiceServer.Check)
 	serverRegistrar.Register(CheckServiceListRulesPath, checkServiceServer.ListRules)
+	serverRegistrar.Register(CheckServiceListCategoriesPath, checkServiceServer.ListCategories)
 }
 
 // *** PRIVATE ***
@@ -133,6 +148,15 @@ func (c *checkServiceClient) Check(ctx context.Context, req *v1beta1.CheckReques
 func (c *checkServiceClient) ListRules(ctx context.Context, req *v1beta1.ListRulesRequest, opts ...pluginrpc_go.CallOption) (*v1beta1.ListRulesResponse, error) {
 	res := &v1beta1.ListRulesResponse{}
 	if err := c.client.Call(ctx, CheckServiceListRulesPath, req, res, opts...); err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+// ListCategories calls buf.plugin.check.v1beta1.CheckService.ListCategories.
+func (c *checkServiceClient) ListCategories(ctx context.Context, req *v1beta1.ListCategoriesRequest, opts ...pluginrpc_go.CallOption) (*v1beta1.ListCategoriesResponse, error) {
+	res := &v1beta1.ListCategoriesResponse{}
+	if err := c.client.Call(ctx, CheckServiceListCategoriesPath, req, res, opts...); err != nil {
 		return nil, err
 	}
 	return res, nil
@@ -173,6 +197,23 @@ func (c *checkServiceServer) ListRules(ctx context.Context, handleEnv pluginrpc_
 				return nil, fmt.Errorf("could not cast %T to a *v1beta1.ListRulesRequest", anyReq)
 			}
 			return c.checkServiceHandler.ListRules(ctx, req)
+		},
+		options...,
+	)
+}
+
+// ListCategories calls buf.plugin.check.v1beta1.CheckService.ListCategories.
+func (c *checkServiceServer) ListCategories(ctx context.Context, handleEnv pluginrpc_go.HandleEnv, options ...pluginrpc_go.HandleOption) error {
+	return c.handler.Handle(
+		ctx,
+		handleEnv,
+		&v1beta1.ListCategoriesRequest{},
+		func(ctx context.Context, anyReq any) (any, error) {
+			req, ok := anyReq.(*v1beta1.ListCategoriesRequest)
+			if !ok {
+				return nil, fmt.Errorf("could not cast %T to a *v1beta1.ListCategoriesRequest", anyReq)
+			}
+			return c.checkServiceHandler.ListCategories(ctx, req)
 		},
 		options...,
 	)

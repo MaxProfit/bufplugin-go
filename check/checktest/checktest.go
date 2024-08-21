@@ -39,8 +39,8 @@ import (
 	"google.golang.org/protobuf/types/descriptorpb"
 )
 
-// TestCase is a single test to run against a set of RuleSpecs.
-type TestCase struct {
+// CheckTest is a single Check test to run against a Spec.
+type CheckTest struct {
 	// Request is the request spec to test.
 	Request *RequestSpec
 	// Spec is the Spec to test.
@@ -51,16 +51,16 @@ type TestCase struct {
 	ExpectedAnnotations []ExpectedAnnotation
 }
 
-// Run runs the TestCase.
+// Run runs the test.
 //
 // This will:
 //
 //   - Build the Files and AgainstFiles.
 //   - Create a new Request.
-//   - Create a new Client based on the RuleSpecs.
+//   - Create a new Client based on the Spec.
 //   - Call Check on the Client.
 //   - Compare the resulting Annotations with the ExpectedAnnotations, failing if there is a mismatch.
-func (c TestCase) Run(t *testing.T) {
+func (c CheckTest) Run(t *testing.T) {
 	ctx := context.Background()
 
 	require.NotNil(t, c.Request)

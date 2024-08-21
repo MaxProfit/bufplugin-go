@@ -23,7 +23,7 @@ import (
 func TestSimple(t *testing.T) {
 	t.Parallel()
 
-	checktest.TestCase{
+	checktest.CheckTest{
 		Request: &checktest.RequestSpec{
 			Files: &checktest.ProtoFileSpec{
 				DirPaths:  []string{"testdata/simple"},

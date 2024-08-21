@@ -17,7 +17,10 @@ package check
 import (
 	"context"
 	"errors"
+	"fmt"
+	"slices"
 
+	"github.com/bufbuild/bufplugin-go/internal/pkg/xslices"
 	"github.com/bufbuild/protovalidate-go"
 )
 
@@ -29,7 +32,18 @@ import (
 // based on the provided RuleSpecs.
 type Spec struct {
 	// Required.
+	//
+	// All RuleSpecs must have Category IDs that match a CategorySpec within Categories.
+	//
+	// No IDs can overlap with Category IDs in Categories.
 	Rules []*RuleSpec
+	// Required if any RuleSpec specifies a category.
+	//
+	// All CategorySpecs must have an ID that matches at least one Category ID on a
+	// RuleSpec within Rules.
+	//
+	// No IDs can overlap with Rule IDs in Rules.
+	Categories []*CategorySpec
 
 	// Before is a function that will be executed before any RuleHandlers are
 	// invoked that returns a new Context and Request. This new Context and
@@ -44,9 +58,34 @@ func validateSpec(validator *protovalidate.Validator, spec *Spec) error {
 	if len(spec.Rules) == 0 {
 		return errors.New("Spec.Rules is empty")
 	}
+	ruleIDs := xslices.Map(spec.Rules, func(ruleSpec *RuleSpec) string { return ruleSpec.ID })
+	if err := validateNoDuplicateRuleIDs(ruleIDs); err != nil {
+		return err
+	}
+	categoryIDs := xslices.Map(spec.Categories, func(categorySpec *CategorySpec) string { return categorySpec.ID })
+	if err := validateNoDuplicateCategoryIDs(categoryIDs); err != nil {
+		return err
+	}
+	ruleAndCategoryIDs := append(slices.Clone(ruleIDs), categoryIDs...)
+	if err := validateNoDuplicateRuleOrCategoryIDs(ruleAndCategoryIDs); err != nil {
+		return err
+	}
+	categoryIDMap := xslices.ToStructMap(categoryIDs)
+	categoryIDForRulesMap := make(map[string]struct{})
 	for _, ruleSpec := range spec.Rules {
-		if err := validateRuleSpec(validator, ruleSpec); err != nil {
+		if err := validateRuleSpec(validator, ruleSpec, categoryIDMap); err != nil {
 			return err
+		}
+		for _, categoryID := range ruleSpec.CategoryIDs {
+			categoryIDForRulesMap[categoryID] = struct{}{}
+		}
+	}
+	for _, categorySpec := range spec.Categories {
+		if err := validateCategorySpec(validator, categorySpec); err != nil {
+			return err
+		}
+		if _, ok := categoryIDForRulesMap[categorySpec.ID]; !ok {
+			return fmt.Errorf("no Rule has a Category ID of %q", categorySpec.ID)
 		}
 	}
 	return nil

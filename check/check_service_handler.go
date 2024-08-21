@@ -30,10 +30,15 @@ const defaultPageSize = 250
 // *** PRIVATE ***
 
 type checkServiceHandler struct {
-	spec             *Spec
-	parallelism      int
-	ruleIDToRuleSpec map[string]*RuleSpec
-	ruleIDToIndex    map[string]int
+	spec                 *Spec
+	parallelism          int
+	rules                []Rule
+	ruleIDToRule         map[string]Rule
+	ruleIDToRuleHandler  map[string]RuleHandler
+	ruleIDToIndex        map[string]int
+	categories           []Category
+	categoryIDToCategory map[string]Category
+	categoryIDToIndex    map[string]int
 }
 
 func newCheckServiceHandler(spec *Spec, parallelism int) (*checkServiceHandler, error) {
@@ -44,21 +49,52 @@ func newCheckServiceHandler(spec *Spec, parallelism int) (*checkServiceHandler, 
 	if err := validateSpec(validator, spec); err != nil {
 		return nil, err
 	}
-	ruleIDToRuleSpec := make(map[string]*RuleSpec, len(spec.Rules))
+	categories := make([]Category, len(spec.Categories))
+	categoryIDToCategory := make(map[string]Category, len(spec.Categories))
+	categoryIDToIndex := make(map[string]int, len(spec.Categories))
+	for i, categorySpec := range spec.Categories {
+		category, err := categorySpecToCategory(categorySpec)
+		if err != nil {
+			return nil, err
+		}
+		id := category.ID()
+		// Should never happen after validating the Spec.
+		if _, ok := categoryIDToCategory[id]; ok {
+			return nil, fmt.Errorf("duplicate Category ID: %q", id)
+		}
+		categories[i] = category
+		categoryIDToCategory[id] = category
+		categoryIDToIndex[id] = i
+	}
+	rules := make([]Rule, len(spec.Rules))
+	ruleIDToRuleHandler := make(map[string]RuleHandler, len(spec.Rules))
+	ruleIDToRule := make(map[string]Rule, len(spec.Rules))
 	ruleIDToIndex := make(map[string]int, len(spec.Rules))
 	for i, ruleSpec := range spec.Rules {
-		id := ruleSpec.ID
-		if _, ok := ruleIDToRuleSpec[id]; ok {
+		rule, err := ruleSpecToRule(ruleSpec, categoryIDToCategory)
+		if err != nil {
+			return nil, err
+		}
+		id := rule.ID()
+		// Should never happen after validating the Spec.
+		if _, ok := ruleIDToRule[id]; ok {
 			return nil, fmt.Errorf("duplicate Rule ID: %q", id)
 		}
-		ruleIDToRuleSpec[id] = ruleSpec
+		rules[i] = rule
+		ruleIDToRuleHandler[id] = ruleSpec.Handler
+		ruleIDToRule[id] = rule
 		ruleIDToIndex[id] = i
 	}
 	return &checkServiceHandler{
-		spec:             spec,
-		parallelism:      parallelism,
-		ruleIDToRuleSpec: ruleIDToRuleSpec,
-		ruleIDToIndex:    ruleIDToIndex,
+		spec:                 spec,
+		parallelism:          parallelism,
+		rules:                rules,
+		ruleIDToRuleHandler:  ruleIDToRuleHandler,
+		ruleIDToRule:         ruleIDToRule,
+		ruleIDToIndex:        ruleIDToIndex,
+		categories:           categories,
+		categoryIDToCategory: categoryIDToCategory,
+		categoryIDToIndex:    categoryIDToIndex,
 	}, nil
 }
 
@@ -76,15 +112,15 @@ func (c *checkServiceHandler) Check(
 			return nil, err
 		}
 	}
-	ruleSpecs := xslices.Filter(c.spec.Rules, func(ruleSpec *RuleSpec) bool { return ruleSpec.IsDefault })
+	rules := xslices.Filter(c.rules, func(rule Rule) bool { return rule.IsDefault() })
 	if ruleIDs := request.RuleIDs(); len(ruleIDs) > 0 {
-		ruleSpecs = make([]*RuleSpec, 0)
+		rules = make([]Rule, 0)
 		for _, ruleID := range ruleIDs {
-			ruleSpec, ok := c.ruleIDToRuleSpec[ruleID]
+			rule, ok := c.ruleIDToRule[ruleID]
 			if !ok {
 				return nil, pluginrpc.NewErrorf(pluginrpc.CodeInvalidArgument, "unknown rule ID: %q", ruleID)
 			}
-			ruleSpecs = append(ruleSpecs, ruleSpec)
+			rules = append(rules, rule)
 		}
 	}
 	multiResponseWriter, err := newMultiResponseWriter(request)
@@ -94,12 +130,17 @@ func (c *checkServiceHandler) Check(
 	if err := thread.Parallelize(
 		ctx,
 		xslices.Map(
-			ruleSpecs,
-			func(ruleSpec *RuleSpec) func(context.Context) error {
+			rules,
+			func(rule Rule) func(context.Context) error {
 				return func(ctx context.Context) error {
-					return ruleSpec.Handler.Handle(
+					ruleHandler, ok := c.ruleIDToRuleHandler[rule.ID()]
+					if !ok {
+						// This should never happen.
+						return fmt.Errorf("no RuleHandler for id %q", rule.ID())
+					}
+					return ruleHandler.Handle(
 						ctx,
-						multiResponseWriter.newResponseWriter(ruleSpec.ID),
+						multiResponseWriter.newResponseWriter(rule.ID()),
 						request,
 					)
 				}
@@ -117,28 +158,34 @@ func (c *checkServiceHandler) Check(
 }
 
 func (c *checkServiceHandler) ListRules(_ context.Context, listRulesRequest *checkv1beta1.ListRulesRequest) (*checkv1beta1.ListRulesResponse, error) {
-	ruleSpecs, nextPageToken, err := c.getRuleSpecsAndNextPageToken(
+	rules, nextPageToken, err := c.getRulesAndNextPageToken(
 		int(listRulesRequest.GetPageSize()),
 		listRulesRequest.GetPageToken(),
 	)
 	if err != nil {
 		return nil, err
 	}
-	protoRules := xslices.Map(
-		xslices.Map(
-			ruleSpecs,
-			// Assumes validated.
-			ruleSpecToRule,
-		),
-		Rule.toProto,
-	)
 	return &checkv1beta1.ListRulesResponse{
 		NextPageToken: nextPageToken,
-		Rules:         protoRules,
+		Rules:         xslices.Map(rules, Rule.toProto),
 	}, nil
 }
 
-func (c *checkServiceHandler) getRuleSpecsAndNextPageToken(pageSize int, pageToken string) ([]*RuleSpec, string, error) {
+func (c *checkServiceHandler) ListCategories(_ context.Context, listCategoriesRequest *checkv1beta1.ListCategoriesRequest) (*checkv1beta1.ListCategoriesResponse, error) {
+	categories, nextPageToken, err := c.getCategoriesAndNextPageToken(
+		int(listCategoriesRequest.GetPageSize()),
+		listCategoriesRequest.GetPageToken(),
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &checkv1beta1.ListCategoriesResponse{
+		NextPageToken: nextPageToken,
+		Categories:    xslices.Map(categories, Category.toProto),
+	}, nil
+}
+
+func (c *checkServiceHandler) getRulesAndNextPageToken(pageSize int, pageToken string) ([]Rule, string, error) {
 	index := 0
 	if pageToken != "" {
 		var ok bool
@@ -150,17 +197,44 @@ func (c *checkServiceHandler) getRuleSpecsAndNextPageToken(pageSize int, pageTok
 	if pageSize == 0 {
 		pageSize = defaultPageSize
 	}
-	resultRuleSpecs := make([]*RuleSpec, 0, len(c.spec.Rules)-index)
+	resultRules := make([]Rule, 0, len(c.rules)-index)
 	for range pageSize {
-		if index >= len(c.spec.Rules) {
+		if index >= len(c.rules) {
 			break
 		}
-		resultRuleSpecs = append(resultRuleSpecs, c.spec.Rules[index])
+		resultRules = append(resultRules, c.rules[index])
 		index++
 	}
 	var nextPageToken string
-	if index < len(c.spec.Rules) {
-		nextPageToken = c.spec.Rules[index].ID
+	if index < len(c.rules) {
+		nextPageToken = c.rules[index].ID()
 	}
-	return resultRuleSpecs, nextPageToken, nil
+	return resultRules, nextPageToken, nil
+}
+
+func (c *checkServiceHandler) getCategoriesAndNextPageToken(pageSize int, pageToken string) ([]Category, string, error) {
+	index := 0
+	if pageToken != "" {
+		var ok bool
+		index, ok = c.categoryIDToIndex[pageToken]
+		if !ok {
+			return nil, "", pluginrpc.NewErrorf(pluginrpc.CodeInvalidArgument, "unknown page token: %q", pageToken)
+		}
+	}
+	if pageSize == 0 {
+		pageSize = defaultPageSize
+	}
+	resultCategories := make([]Category, 0, len(c.categories)-index)
+	for range pageSize {
+		if index >= len(c.categories) {
+			break
+		}
+		resultCategories = append(resultCategories, c.categories[index])
+		index++
+	}
+	var nextPageToken string
+	if index < len(c.categories) {
+		nextPageToken = c.categories[index].ID()
+	}
+	return resultCategories, nextPageToken, nil
 }

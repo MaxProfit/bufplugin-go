@@ -103,6 +103,20 @@ func CompareRules(one Rule, two Rule) int {
 	return strings.Compare(one.ID(), two.ID())
 }
 
+// CompareCategories returns -1 if one < two, 1 if one > two, 0 otherwise.
+func CompareCategories(one Category, two Category) int {
+	if one == nil && two == nil {
+		return 0
+	}
+	if one == nil && two != nil {
+		return -1
+	}
+	if one != nil && two == nil {
+		return 1
+	}
+	return strings.Compare(one.ID(), two.ID())
+}
+
 // *** PRIVATE ***
 
 func intCompare(one int, two int) int {

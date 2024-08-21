@@ -19,26 +19,72 @@ import (
 	"strings"
 )
 
-type duplicateRuleError struct {
-	duplicateRuleIDs []string
+type duplicateRuleIDError struct {
+	duplicateIDs []string
 }
 
-func newDuplicateRuleError(duplicateRuleIDs []string) *duplicateRuleError {
-	return &duplicateRuleError{
-		duplicateRuleIDs: duplicateRuleIDs,
+func newDuplicateRuleIDError(duplicateIDs []string) *duplicateRuleIDError {
+	return &duplicateRuleIDError{
+		duplicateIDs: duplicateIDs,
 	}
 }
 
-func (d *duplicateRuleError) Error() string {
-	if d == nil {
+func (r *duplicateRuleIDError) Error() string {
+	if r == nil {
 		return ""
 	}
-	if len(d.duplicateRuleIDs) == 0 {
+	if len(r.duplicateIDs) == 0 {
 		return ""
 	}
 	var sb strings.Builder
 	_, _ = sb.WriteString("duplicate rule IDs: ")
-	_, _ = sb.WriteString(strings.Join(d.duplicateRuleIDs, ", "))
+	_, _ = sb.WriteString(strings.Join(r.duplicateIDs, ", "))
+	return sb.String()
+}
+
+type duplicateCategoryIDError struct {
+	duplicateIDs []string
+}
+
+func newDuplicateCategoryIDError(duplicateIDs []string) *duplicateCategoryIDError {
+	return &duplicateCategoryIDError{
+		duplicateIDs: duplicateIDs,
+	}
+}
+
+func (c *duplicateCategoryIDError) Error() string {
+	if c == nil {
+		return ""
+	}
+	if len(c.duplicateIDs) == 0 {
+		return ""
+	}
+	var sb strings.Builder
+	_, _ = sb.WriteString("duplicate category IDs: ")
+	_, _ = sb.WriteString(strings.Join(c.duplicateIDs, ", "))
+	return sb.String()
+}
+
+type duplicateRuleOrCategoryIDError struct {
+	duplicateIDs []string
+}
+
+func newDuplicateRuleOrCategoryIDError(duplicateIDs []string) *duplicateRuleOrCategoryIDError {
+	return &duplicateRuleOrCategoryIDError{
+		duplicateIDs: duplicateIDs,
+	}
+}
+
+func (o *duplicateRuleOrCategoryIDError) Error() string {
+	if o == nil {
+		return ""
+	}
+	if len(o.duplicateIDs) == 0 {
+		return ""
+	}
+	var sb strings.Builder
+	_, _ = sb.WriteString("duplicate rule or category IDs: ")
+	_, _ = sb.WriteString(strings.Join(o.duplicateIDs, ", "))
 	return sb.String()
 }
 

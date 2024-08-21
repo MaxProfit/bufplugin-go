@@ -140,7 +140,7 @@ func newRequest(
 	if requestOptions.options == nil {
 		requestOptions.options = emptyOptions
 	}
-	if err := validateNoDuplicateRuleIDs(requestOptions.ruleIDs); err != nil {
+	if err := validateNoDuplicateRuleOrCategoryIDs(requestOptions.ruleIDs); err != nil {
 		return nil, err
 	}
 	sort.Strings(requestOptions.ruleIDs)

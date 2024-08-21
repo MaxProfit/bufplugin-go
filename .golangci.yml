@@ -68,6 +68,9 @@ issues:
       path: check/response_writer.go
     - linters:
         - unparam
+      path: check/category_spec.go
+    - linters:
+        - unparam
       path: check/annotation.go
     - linters:
         - unparam

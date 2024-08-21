@@ -25,7 +25,8 @@ import (
 )
 
 const (
-	listRulesPageSize = 250
+	listRulesPageSize      = 250
+	listCategoriesPageSize = 250
 )
 
 // Client is a client for a custom lint or breaking change plugin.
@@ -37,6 +38,11 @@ type Client interface {
 	// The Rules will be sorted by Rule ID.
 	// Returns error if duplicate Rule IDs were detected from the underlying source.
 	ListRules(ctx context.Context, options ...ListRulesCallOption) ([]Rule, error)
+	// ListCategories lists all available Categories from the plugin.
+	//
+	// The Categories will be sorted by Category ID.
+	// Returns error if duplicate Category IDs were detected from the underlying source.
+	ListCategories(ctx context.Context, options ...ListCategoriesCallOption) ([]Category, error)
 
 	isClient()
 }
@@ -49,13 +55,13 @@ func NewClient(pluginrpcClient pluginrpc.Client, options ...ClientOption) Client
 // ClientOption is an option for a new Client.
 type ClientOption func(*clientOptions)
 
-// ClientWithCacheRules returns a new ClientOption that will result in the Rules from
-// ListRules being cached.
+// ClientWithCacheRulesAndCategories returns a new ClientOption that will result in the Rules from
+// ListRules and the Categories from ListCategories being cached.
 //
-// The default is to not cache Rules.
-func ClientWithCacheRules() ClientOption {
+// The default is to not cache Rules or Categories.
+func ClientWithCacheRulesAndCategories() ClientOption {
 	return func(clientOptions *clientOptions) {
-		clientOptions.cacheRules = true
+		clientOptions.cacheRulesAndCategories = true
 	}
 }
 
@@ -87,15 +93,25 @@ type CheckCallOption func(*checkCallOptions)
 // ListRulesCallOption is an option for a Client.ListRules call.
 type ListRulesCallOption func(*listRulesCallOptions)
 
+// ListCategoriesCallOption is an option for a Client.ListCategories call.
+type ListCategoriesCallOption func(*listCategoriesCallOptions)
+
 // *** PRIVATE ***
 
 type client struct {
 	pluginrpcClient pluginrpc.Client
 
-	cacheRules     bool
+	cacheRulesAndCategories bool
+
 	cachedRules    []Rule
 	cachedRulesErr error
-	lock           sync.RWMutex
+
+	cachedCategories    []Category
+	cachedCategoriesErr error
+
+	// Lock ordering: rulesLock -> categoriesLock
+	rulesLock      sync.RWMutex
+	categoriesLock sync.RWMutex
 }
 
 func newClient(
@@ -107,8 +123,8 @@ func newClient(
 		option(clientOptions)
 	}
 	return &client{
-		pluginrpcClient: pluginrpcClient,
-		cacheRules:      clientOptions.cacheRules,
+		pluginrpcClient:         pluginrpcClient,
+		cacheRulesAndCategories: clientOptions.cacheRulesAndCategories,
 	}
 }
 
@@ -145,22 +161,41 @@ func (c *client) Check(ctx context.Context, request Request, _ ...CheckCallOptio
 }
 
 func (c *client) ListRules(ctx context.Context, _ ...ListRulesCallOption) ([]Rule, error) {
-	if !c.cacheRules {
+	if !c.cacheRulesAndCategories {
 		return c.listRulesUncached(ctx)
 	}
-	c.lock.RLock()
+	c.rulesLock.RLock()
 	if len(c.cachedRules) > 0 || c.cachedRulesErr != nil {
-		c.lock.RUnlock()
+		c.rulesLock.RUnlock()
 		return c.cachedRules, c.cachedRulesErr
 	}
-	c.lock.RUnlock()
+	c.rulesLock.RUnlock()
 
-	c.lock.Lock()
-	defer c.lock.Unlock()
+	c.rulesLock.Lock()
+	defer c.rulesLock.Unlock()
 	if len(c.cachedRules) == 0 && c.cachedRulesErr == nil {
 		c.cachedRules, c.cachedRulesErr = c.listRulesUncached(ctx)
 	}
 	return c.cachedRules, c.cachedRulesErr
+}
+
+func (c *client) ListCategories(ctx context.Context, _ ...ListCategoriesCallOption) ([]Category, error) {
+	if !c.cacheRulesAndCategories {
+		return c.listCategoriesUncached(ctx)
+	}
+	c.categoriesLock.RLock()
+	if len(c.cachedCategories) > 0 || c.cachedCategoriesErr != nil {
+		c.categoriesLock.RUnlock()
+		return c.cachedCategories, c.cachedCategoriesErr
+	}
+	c.categoriesLock.RUnlock()
+
+	c.categoriesLock.Lock()
+	defer c.categoriesLock.Unlock()
+	if len(c.cachedCategories) == 0 && c.cachedCategoriesErr == nil {
+		c.cachedCategories, c.cachedCategoriesErr = c.listCategoriesUncached(ctx)
+	}
+	return c.cachedCategories, c.cachedCategoriesErr
 }
 
 func (c *client) listRulesUncached(ctx context.Context) ([]Rule, error) {
@@ -187,7 +222,23 @@ func (c *client) listRulesUncached(ctx context.Context) ([]Rule, error) {
 			break
 		}
 	}
-	rules, err := xslices.MapError(protoRules, ruleForProtoRule)
+
+	// We acquire rulesLock before categoriesLock.
+	categories, err := c.ListCategories(ctx)
+	if err != nil {
+		return nil, err
+	}
+	categoryIDToCategory := make(map[string]Category)
+	for _, category := range categories {
+		// We know there are no duplicate IDs from validation.
+		categoryIDToCategory[category.ID()] = category
+	}
+	rules, err := xslices.MapError(
+		protoRules,
+		func(protoRule *checkv1beta1.Rule) (Rule, error) {
+			return ruleForProtoRule(protoRule, categoryIDToCategory)
+		},
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -198,6 +249,41 @@ func (c *client) listRulesUncached(ctx context.Context) ([]Rule, error) {
 	return rules, nil
 }
 
+func (c *client) listCategoriesUncached(ctx context.Context) ([]Category, error) {
+	checkServiceClient, err := c.newCheckServiceClient()
+	if err != nil {
+		return nil, err
+	}
+	var protoCategories []*checkv1beta1.Category
+	var pageToken string
+	for {
+		response, err := checkServiceClient.ListCategories(
+			ctx,
+			&checkv1beta1.ListCategoriesRequest{
+				PageSize:  listCategoriesPageSize,
+				PageToken: pageToken,
+			},
+		)
+		if err != nil {
+			return nil, err
+		}
+		protoCategories = append(protoCategories, response.GetCategories()...)
+		pageToken = response.GetNextPageToken()
+		if pageToken == "" {
+			break
+		}
+	}
+	categories, err := xslices.MapError(protoCategories, categoryForProtoCategory)
+	if err != nil {
+		return nil, err
+	}
+	if err := validateNoDuplicateCategories(categories); err != nil {
+		return nil, err
+	}
+	sortCategories(categories)
+	return categories, nil
+}
+
 func (c *client) newCheckServiceClient() (v1beta1pluginrpc.CheckServiceClient, error) {
 	return v1beta1pluginrpc.NewCheckServiceClient(c.pluginrpcClient)
 }
@@ -205,7 +291,7 @@ func (c *client) newCheckServiceClient() (v1beta1pluginrpc.CheckServiceClient, e
 func (*client) isClient() {}
 
 type clientOptions struct {
-	cacheRules bool
+	cacheRulesAndCategories bool
 }
 
 func newClientOptions() *clientOptions {
@@ -215,3 +301,5 @@ func newClientOptions() *clientOptions {
 type checkCallOptions struct{}
 
 type listRulesCallOptions struct{}
+
+type listCategoriesCallOptions struct{}
