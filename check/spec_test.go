@@ -58,8 +58,8 @@ func TestValidateSpec(t *testing.T) {
 		Categories: []*CategorySpec{
 			testNewSimpleCategorySpec("category1", false, nil),
 			testNewSimpleCategorySpec("category2", false, nil),
-			testNewSimpleCategorySpec("category3", true, nil),
-			testNewSimpleCategorySpec("category4", true, nil),
+			testNewSimpleCategorySpec("category3", true, []string{"category1"}),
+			testNewSimpleCategorySpec("category4", true, []string{"category1", "category2"}),
 		},
 	}
 	require.NoError(t, validateSpec(validator, spec))
@@ -107,6 +107,39 @@ func TestValidateSpec(t *testing.T) {
 		},
 	}
 	require.ErrorAs(t, validateSpec(validator, spec), &validateSpecError)
+
+	// Spec that has deprecated rules that point to deprecated rules.
+	spec = &Spec{
+		Rules: []*RuleSpec{
+			testNewSimpleLintRuleSpec("rule1", nil, true, false, nil),
+			testNewSimpleLintRuleSpec("rule2", nil, false, true, []string{"rule1"}),
+			testNewSimpleLintRuleSpec("rule3", nil, false, true, []string{"rule2"}),
+		},
+	}
+	require.ErrorAs(t, validateSpec(validator, spec), &validateRuleSpecError)
+
+	// Spec that has deprecated rules that are defaults.
+	spec = &Spec{
+		Rules: []*RuleSpec{
+			testNewSimpleLintRuleSpec("rule1", nil, true, true, nil),
+		},
+	}
+	require.ErrorAs(t, validateSpec(validator, spec), &validateRuleSpecError)
+
+	// Spec that has deprecated categories that point to deprecated categories.
+	spec = &Spec{
+		Rules: []*RuleSpec{
+			testNewSimpleLintRuleSpec("rule1", nil, true, false, nil),
+			testNewSimpleLintRuleSpec("rule2", []string{"category1"}, true, false, nil),
+			testNewSimpleLintRuleSpec("rule3", []string{"category1", "category2", "category3"}, true, false, nil),
+		},
+		Categories: []*CategorySpec{
+			testNewSimpleCategorySpec("category1", false, nil),
+			testNewSimpleCategorySpec("category2", true, []string{"category1"}),
+			testNewSimpleCategorySpec("category3", true, []string{"category2"}),
+		},
+	}
+	require.ErrorAs(t, validateSpec(validator, spec), &validateCategorySpecError)
 }
 
 func testNewSimpleLintRuleSpec(
