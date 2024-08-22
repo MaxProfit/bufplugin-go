@@ -21,8 +21,6 @@ import (
 
 // *** PRIVATE ***
 
-// TODO: flag prefix
-
 func newCheckServer(checkServiceHandler v1beta1pluginrpc.CheckServiceHandler) (pluginrpc.Server, error) {
 	spec, err := v1beta1pluginrpc.CheckServiceSpecBuilder{
 		Check:     []pluginrpc.ProcedureOption{pluginrpc.ProcedureWithArgs("check")},

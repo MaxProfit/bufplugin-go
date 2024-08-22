@@ -69,7 +69,6 @@ func ClientWithCacheRulesAndCategories() ClientOption {
 //
 // This should primarily be used for testing.
 func NewClientForSpec(spec *Spec, options ...ClientOption) (Client, error) {
-	//  TODO: Expose parallelism as an option.
 	checkServiceHandler, err := newCheckServiceHandler(spec, 0)
 	if err != nil {
 		return nil, err
@@ -78,12 +77,6 @@ func NewClientForSpec(spec *Spec, options ...ClientOption) (Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	// Using ContentTypeBinary as there are items that ContentTypeJSON cannot serialize.
-	//
-	// For example, google.protobuf.Timestamps positive seconds and negative nanos will fail serialization.
-	// We make the choice for the user here that we will use binary.
-	//
-	// We may want to make binary the global default TODO.
 	return newClient(pluginrpc.NewClient(pluginrpc.NewServerRunner(checkServer)), options...), nil
 }
 
