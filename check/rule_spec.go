@@ -103,7 +103,7 @@ func validateRuleSpec(
 ) error {
 	for _, categoryID := range ruleSpec.CategoryIDs {
 		if _, ok := categoryIDMap[categoryID]; !ok {
-			return newValidateRuleSpecErrorf("no category for ID %q", categoryID)
+			return newValidateRuleSpecErrorf("no category has ID %q", categoryID)
 		}
 	}
 	if ruleSpec.Purpose == "" {
@@ -117,6 +117,9 @@ func validateRuleSpec(
 	}
 	if ruleSpec.Handler == nil {
 		return newValidateRuleSpecErrorf("Handler is not set for ID %q", ruleSpec.ID)
+	}
+	if ruleSpec.IsDefault && ruleSpec.Deprecated {
+		return newValidateRuleSpecErrorf("ID %q was a default Rule but Deprecated was false", ruleSpec.ID)
 	}
 	if len(ruleSpec.ReplacementIDs) > 0 && !ruleSpec.Deprecated {
 		return newValidateRuleSpecErrorf("ID %q had ReplacementIDs but Deprecated was false", ruleSpec.ID)

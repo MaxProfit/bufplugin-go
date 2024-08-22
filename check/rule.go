@@ -45,6 +45,8 @@ type Rule interface {
 	// Whether or not the Rule is a default Rule.
 	//
 	// If a Rule is a default Rule, it will be called if a Request specifies no specific Rule IDs.
+	//
+	// A deprecated rule cannot be a default rule.
 	IsDefault() bool
 	// A user-displayable purpose of the rule.
 	//
