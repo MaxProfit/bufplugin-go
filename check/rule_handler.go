@@ -18,6 +18,8 @@ import (
 	"context"
 )
 
+var nopRuleHandler = RuleHandlerFunc(func(context.Context, ResponseWriter, Request) error { return nil })
+
 // RuleHandler implements the check logic for a single Rule.
 //
 // A RuleHandler takes in a Request, and writes Annotations to the ResponseWriter.

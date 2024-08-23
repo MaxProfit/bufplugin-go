@@ -16,20 +16,21 @@ package check
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/bufbuild/bufplugin-go/internal/pkg/xslices"
 	"github.com/stretchr/testify/require"
 )
 
-func TestClientListRulesCategories(t *testing.T) {
+func TestClientListRulesCategoriesSimple(t *testing.T) {
 	t.Parallel()
 
-	testClientListRulesCategories(t)
-	testClientListRulesCategories(t, ClientWithCacheRulesAndCategories())
+	testClientListRulesCategoriesSimple(t)
+	testClientListRulesCategoriesSimple(t, ClientWithCacheRulesAndCategories())
 }
 
-func testClientListRulesCategories(t *testing.T, options ...ClientOption) {
+func testClientListRulesCategoriesSimple(t *testing.T, options ...ClientOption) {
 	ctx := context.Background()
 	client, err := NewClientForSpec(
 		&Spec{
@@ -38,7 +39,7 @@ func testClientListRulesCategories(t *testing.T, options ...ClientOption) {
 					ID:      "rule1",
 					Purpose: "Test rule1.",
 					Type:    RuleTypeLint,
-					Handler: RuleHandlerFunc(func(context.Context, ResponseWriter, Request) error { return nil }),
+					Handler: nopRuleHandler,
 				},
 				{
 					ID: "rule2",
@@ -47,7 +48,7 @@ func testClientListRulesCategories(t *testing.T, options ...ClientOption) {
 					},
 					Purpose: "Test rule2.",
 					Type:    RuleTypeLint,
-					Handler: RuleHandlerFunc(func(context.Context, ResponseWriter, Request) error { return nil }),
+					Handler: nopRuleHandler,
 				},
 				{
 					ID: "rule3",
@@ -57,7 +58,7 @@ func testClientListRulesCategories(t *testing.T, options ...ClientOption) {
 					},
 					Purpose: "Test rule3.",
 					Type:    RuleTypeLint,
-					Handler: RuleHandlerFunc(func(context.Context, ResponseWriter, Request) error { return nil }),
+					Handler: nopRuleHandler,
 				},
 			},
 			Categories: []*CategorySpec{
@@ -114,4 +115,36 @@ func testClientListRulesCategories(t *testing.T, options ...ClientOption) {
 		},
 		xslices.Map(categories, Category.ID),
 	)
+}
+
+func TestClientListRulesCount(t *testing.T) {
+	t.Parallel()
+
+	testClientListRulesCount(t, listRulesPageSize-1)
+	testClientListRulesCount(t, listRulesPageSize)
+	testClientListRulesCount(t, listRulesPageSize+1)
+	testClientListRulesCount(t, listRulesPageSize*2)
+	testClientListRulesCount(t, (listRulesPageSize*2)+1)
+	testClientListRulesCount(t, (listRulesPageSize*4)+1)
+}
+
+func testClientListRulesCount(t *testing.T, count int) {
+	require.True(t, count < 10000, "count must be less than 10000 for sorting to work properly in this test")
+	ruleSpecs := make([]*RuleSpec, count)
+	for i := range count {
+		ruleSpecs[i] = &RuleSpec{
+			ID:      fmt.Sprintf("rule%05d", i),
+			Purpose: fmt.Sprintf("Test rule%05d.", i),
+			Type:    RuleTypeLint,
+			Handler: nopRuleHandler,
+		}
+	}
+	client, err := NewClientForSpec(&Spec{Rules: ruleSpecs})
+	require.NoError(t, err)
+	rules, err := client.ListRules(context.Background())
+	require.NoError(t, err)
+	require.Equal(t, count, len(rules))
+	for i := range count {
+		require.Equal(t, ruleSpecs[i].ID, rules[i].ID())
+	}
 }

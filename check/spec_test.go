@@ -15,7 +15,6 @@
 package check
 
 import (
-	"context"
 	"testing"
 
 	"github.com/bufbuild/protovalidate-go"
@@ -157,11 +156,7 @@ func testNewSimpleLintRuleSpec(
 		Type:           RuleTypeLint,
 		Deprecated:     deprecated,
 		ReplacementIDs: replacementIDs,
-		Handler: RuleHandlerFunc(
-			func(context.Context, ResponseWriter, Request) error {
-				return nil
-			},
-		),
+		Handler:        nopRuleHandler,
 	}
 }
 
