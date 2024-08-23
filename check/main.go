@@ -37,10 +37,14 @@ import (
 //			},
 //		)
 //	}
-func Main(spec *Spec, _ ...MainOption) {
+func Main(spec *Spec, options ...MainOption) {
+	mainOptions := newMainOptions()
+	for _, option := range options {
+		option(mainOptions)
+	}
 	pluginrpc.Main(
 		func() (pluginrpc.Server, error) {
-			checkServiceHandler, err := newCheckServiceHandler(spec, 0)
+			checkServiceHandler, err := newCheckServiceHandler(spec, mainOptions.parallelism)
 			if err != nil {
 				return nil, err
 			}
@@ -52,6 +56,28 @@ func Main(spec *Spec, _ ...MainOption) {
 // MainOption is an option for Main.
 type MainOption func(*mainOptions)
 
+// MainWithParallelism returns a new MainOption that sets the parallelism by which Rules
+// will be run.
+//
+// If this is set to a value >= 1, this many concurrent Rules can be run at the same time.
+// A value of 0 indicates the default behavior, which is to use runtime.GOMAXPROCS(0).
+//
+// A value if < 0 has no effect.
+func MainWithParallelism(parallelism int) MainOption {
+	return func(mainOptions *mainOptions) {
+		if parallelism < 0 {
+			parallelism = 0
+		}
+		mainOptions.parallelism = parallelism
+	}
+}
+
 // *** PRIVATE ***
 
-type mainOptions struct{}
+type mainOptions struct {
+	parallelism int
+}
+
+func newMainOptions() *mainOptions {
+	return &mainOptions{}
+}
