@@ -6,7 +6,7 @@ bufplugin-go
 [![GoDoc](https://pkg.go.dev/badge/github.com/bufbuild/bufplugin-go.svg)](https://pkg.go.dev/github.com/bufbuild/bufplugin-go)
 [![Slack](https://img.shields.io/badge/slack-buf-%23e01563)](https://buf.build/links/slack)
 
-This is the Golang SDK for [bufplugin](https://github.com/bufbuild/bufplugin-proto).
+This is the Golang SDK for [bufplugin](https://github.com/bufbuild/bufplugin).
 
 This is very early, but see the [examples](check/internal/examples) for how this works in practice.
 
