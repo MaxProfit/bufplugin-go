@@ -17,6 +17,7 @@ package check
 import (
 	"context"
 	"fmt"
+	"slices"
 	"testing"
 
 	"github.com/bufbuild/bufplugin-go/internal/pkg/xslices"
@@ -139,7 +140,10 @@ func testClientListRulesCount(t *testing.T, count int) {
 			Handler: nopRuleHandler,
 		}
 	}
-	client, err := NewClientForSpec(&Spec{Rules: ruleSpecs})
+	// Make the ruleSpecs not in sorted order.
+	ruleSpecsOutOfOrder := slices.Clone(ruleSpecs)
+	slices.Reverse(ruleSpecsOutOfOrder)
+	client, err := NewClientForSpec(&Spec{Rules: ruleSpecsOutOfOrder})
 	require.NoError(t, err)
 	rules, err := client.ListRules(context.Background())
 	require.NoError(t, err)
