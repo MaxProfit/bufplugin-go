@@ -15,6 +15,8 @@
 package check
 
 import (
+	"sort"
+
 	"github.com/bufbuild/bufplugin-go/internal/pkg/xslices"
 	"github.com/bufbuild/protovalidate-go"
 )
@@ -104,4 +106,8 @@ func validateCategorySpec(
 	// TODO: This isn't working
 	return nil
 	// return validator.Validate(categorySpecToCategory(categorySpec, emptyOptions).toProto())
+}
+
+func sortCategorySpecs(categorySpecs []*CategorySpec) {
+	sort.Slice(categorySpecs, func(i int, j int) bool { return compareCategorySpecs(categorySpecs[i], categorySpecs[j]) < 0 })
 }

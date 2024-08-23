@@ -16,6 +16,7 @@ package check
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/bufbuild/bufplugin-go/internal/pkg/xslices"
 	"github.com/bufbuild/protovalidate-go"
@@ -137,4 +138,8 @@ func validateRuleSpec(
 	// TODO: This isn't working
 	return nil
 	// return validator.Validate(ruleSpecToRule(ruleSpec, emptyOptions).toProto())
+}
+
+func sortRuleSpecs(ruleSpecs []*RuleSpec) {
+	sort.Slice(ruleSpecs, func(i int, j int) bool { return compareRuleSpecs(ruleSpecs[i], ruleSpecs[j]) < 0 })
 }

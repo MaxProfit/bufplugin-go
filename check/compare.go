@@ -119,6 +119,34 @@ func CompareCategories(one Category, two Category) int {
 
 // *** PRIVATE ***
 
+// compareRuleSpecs returns -1 if one < two, 1 if one > two, 0 otherwise.
+func compareRuleSpecs(one *RuleSpec, two *RuleSpec) int {
+	if one == nil && two == nil {
+		return 0
+	}
+	if one == nil && two != nil {
+		return -1
+	}
+	if one != nil && two == nil {
+		return 1
+	}
+	return strings.Compare(one.ID, two.ID)
+}
+
+// compareCategorySpecs returns -1 if one < two, 1 if one > two, 0 otherwise.
+func compareCategorySpecs(one *CategorySpec, two *CategorySpec) int {
+	if one == nil && two == nil {
+		return 0
+	}
+	if one == nil && two != nil {
+		return -1
+	}
+	if one != nil && two == nil {
+		return 1
+	}
+	return strings.Compare(one.ID, two.ID)
+}
+
 func intCompare(one int, two int) int {
 	if one < two {
 		return -1

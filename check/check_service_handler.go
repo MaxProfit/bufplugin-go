@@ -17,6 +17,7 @@ package check
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	checkv1beta1 "buf.build/gen/go/bufbuild/bufplugin/protocolbuffers/go/buf/plugin/check/v1beta1"
 	"github.com/bufbuild/bufplugin-go/internal/pkg/thread"
@@ -49,10 +50,12 @@ func newCheckServiceHandler(spec *Spec, parallelism int) (*checkServiceHandler, 
 	if err := validateSpec(validator, spec); err != nil {
 		return nil, err
 	}
-	categories := make([]Category, len(spec.Categories))
-	categoryIDToCategory := make(map[string]Category, len(spec.Categories))
-	categoryIDToIndex := make(map[string]int, len(spec.Categories))
-	for i, categorySpec := range spec.Categories {
+	categorySpecs := slices.Clone(spec.Categories)
+	sortCategorySpecs(categorySpecs)
+	categories := make([]Category, len(categorySpecs))
+	categoryIDToCategory := make(map[string]Category, len(categorySpecs))
+	categoryIDToIndex := make(map[string]int, len(categorySpecs))
+	for i, categorySpec := range categorySpecs {
 		category, err := categorySpecToCategory(categorySpec)
 		if err != nil {
 			return nil, err
@@ -66,11 +69,13 @@ func newCheckServiceHandler(spec *Spec, parallelism int) (*checkServiceHandler, 
 		categoryIDToCategory[id] = category
 		categoryIDToIndex[id] = i
 	}
-	rules := make([]Rule, len(spec.Rules))
-	ruleIDToRuleHandler := make(map[string]RuleHandler, len(spec.Rules))
-	ruleIDToRule := make(map[string]Rule, len(spec.Rules))
-	ruleIDToIndex := make(map[string]int, len(spec.Rules))
-	for i, ruleSpec := range spec.Rules {
+	ruleSpecs := slices.Clone(spec.Rules)
+	sortRuleSpecs(ruleSpecs)
+	rules := make([]Rule, len(ruleSpecs))
+	ruleIDToRuleHandler := make(map[string]RuleHandler, len(ruleSpecs))
+	ruleIDToRule := make(map[string]Rule, len(ruleSpecs))
+	ruleIDToIndex := make(map[string]int, len(ruleSpecs))
+	for i, ruleSpec := range ruleSpecs {
 		rule, err := ruleSpecToRule(ruleSpec, categoryIDToCategory)
 		if err != nil {
 			return nil, err
